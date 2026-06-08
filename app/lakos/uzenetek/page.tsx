@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { RealtimeRefresh } from "@/components/realtime/realtime-refresh";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
 import { getUserConversations } from "@/lib/conversations";
@@ -60,6 +61,7 @@ export default async function LakosUzenetekPage() {
             ))}
           </div>
         )}
+        <RealtimeRefresh table="messages" event="INSERT" />
       </PageContainer>
     </div>
   );

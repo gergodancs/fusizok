@@ -89,8 +89,21 @@ export async function getMatchedJobsForCraftsman(
     };
   }
 
+  const { data: existingBids, error: bidsError } = await supabase
+    .from("job_bids")
+    .select("job_id")
+    .eq("craftsman_id", userId);
+
+  if (bidsError) {
+    console.error("Pályázatok lekérdezési hiba:", bidsError.message);
+  }
+
+  const bidJobIds = new Set((existingBids ?? []).map((b) => b.job_id));
+
+  const jobs = ((data ?? []) as Job[]).filter((job) => !bidJobIds.has(job.id));
+
   return {
-    jobs: (data ?? []) as Job[],
+    jobs,
     craftsmanProfile: craftsmanProfile as CraftsmanProfile,
     professions,
     districts,

@@ -2,6 +2,8 @@ import { CraftsmanNav } from "@/components/layout/craftsman-nav";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanNavCounts } from "@/lib/notifications";
 
+export const dynamic = "force-dynamic";
+
 export default async function SzakiLayout({
   children,
 }: {

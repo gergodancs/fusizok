@@ -34,7 +34,8 @@ export default async function SzakiPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-zinc-400">
             Csak azokat a nyitott melókat látod, amelyek illeszkednek a
-            profilodban megadott kategóriákhoz és kerületekhez.
+            profilodban megadott kategóriákhoz és kerületekhez, és amelyekre
+            még nem pályáztál.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">

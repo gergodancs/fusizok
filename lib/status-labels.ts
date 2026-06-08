@@ -21,3 +21,13 @@ export function getJobStatusLabel(status: string): string {
 export function getJobBidStatusLabel(status: string): string {
   return JOB_BID_STATUS_LABELS[status as JobBidStatus] ?? status;
 }
+
+export function getBidActivityStatusLabel(bid: {
+  status: string;
+  contact_shared: boolean;
+}): string {
+  if (bid.contact_shared) {
+    return "Kontakt megosztva";
+  }
+  return getJobBidStatusLabel(bid.status);
+}

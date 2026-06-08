@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { RealtimeRefresh } from "@/components/realtime/realtime-refresh";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import {
@@ -57,8 +58,8 @@ export default async function SzakiUzenetekPage({
               Még nincs beszélgetésed
             </p>
             <p className="mt-2 text-sm text-zinc-500">
-              Ha pályázol egy munkára, automatikusan létrejön a chat a
-              megrendelővel.
+              A chat akkor jelenik meg, ha a megrendelő megosztja veled a
+              kapcsolatot.
             </p>
             <Link
               href="/szaki"
@@ -100,6 +101,7 @@ export default async function SzakiUzenetekPage({
             ))}
           </div>
         )}
+        <RealtimeRefresh table="messages" event="INSERT" />
       </PageContainer>
     </div>
   );

@@ -1,6 +1,8 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { markConversationReadAction } from "@/app/actions/notifications";
 import { sendMessage, type SendMessageState } from "@/app/actions/messages";
 import { createClient } from "@/lib/supabase/client";
 import type { Message } from "@/lib/types/message";
@@ -19,6 +21,7 @@ export function ChatRoom({
   currentUserId,
   initialMessages,
 }: ChatRoomProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [state, formAction, isPending] = useActionState(
     sendMessage,
@@ -26,9 +29,20 @@ export function ChatRoom({
   );
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  const markReadAndRefresh = useCallback(async () => {
+    const result = await markConversationReadAction(conversationId);
+    if (result.ok) {
+      router.refresh();
+    }
+  }, [conversationId, router]);
+
   useEffect(() => {
     setMessages(initialMessages);
   }, [initialMessages]);
+
+  useEffect(() => {
+    void markReadAndRefresh();
+  }, [markReadAndRefresh]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -49,6 +63,7 @@ export function ChatRoom({
             if (prev.some((m) => m.id === newMessage.id)) return prev;
             return [...prev, newMessage];
           });
+          void markReadAndRefresh();
         },
       )
       .subscribe();
@@ -56,11 +71,17 @@ export function ChatRoom({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversationId]);
+  }, [conversationId, markReadAndRefresh]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!state.error && !isPending) {
+      void markReadAndRefresh();
+    }
+  }, [state, isPending, markReadAndRefresh]);
 
   return (
     <div className="flex h-[calc(100vh-14rem)] flex-col">

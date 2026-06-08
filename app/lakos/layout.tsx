@@ -3,6 +3,8 @@ import { LakosNav } from "@/components/layout/lakos-nav";
 import { getAuthContext } from "@/lib/auth/session";
 import { getClientNavCounts } from "@/lib/notifications";
 
+export const dynamic = "force-dynamic";
+
 export default async function LakosLayout({
   children,
 }: {

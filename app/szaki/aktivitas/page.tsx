@@ -5,8 +5,9 @@ import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanActivity } from "@/lib/bids";
 import type { BidWithJob } from "@/lib/bids";
 import { markCraftsmanContactSharesSeen } from "@/lib/notifications";
+import { RealtimeRefresh } from "@/components/realtime/realtime-refresh";
 import {
-  getJobBidStatusLabel,
+  getBidActivityStatusLabel,
   getJobStatusLabel,
 } from "@/lib/status-labels";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
@@ -26,8 +27,14 @@ function BidActivityCard({ bid }: { bid: BidWithJob }) {
             {bid.job.category} · {bid.job.zip_code}
           </p>
         </div>
-        <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400">
-          {getJobBidStatusLabel(bid.status)}
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+            bid.contact_shared
+              ? "bg-emerald-500/15 text-emerald-400"
+              : "bg-amber-500/15 text-amber-400"
+          }`}
+        >
+          {getBidActivityStatusLabel(bid)}
         </span>
       </div>
 
@@ -127,10 +134,15 @@ export default async function SzakiAktivitasPage() {
         />
 
         <ActivitySection
-          title="Elfogadva / aktív"
-          description="Elnyert munkák, amelyeknél téged választottak."
+          title="Aktív / kontakt megosztva"
+          description="Pályázatok, ahol a megrendelő megosztotta veled a kapcsolatot."
           bids={activity.accepted}
-          emptyText="Még nincs elfogadott pályázatod."
+          emptyText="Még nincs aktív pályázatod."
+        />
+
+        <RealtimeRefresh
+          table="job_bids"
+          filter={`craftsman_id=eq.${user.id}`}
         />
 
         <ActivitySection

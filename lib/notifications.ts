@@ -155,28 +155,33 @@ export async function markCraftsmanContactSharesSeen(
 export async function markConversationRead(
   conversationId: string,
   userId: string,
-): Promise<void> {
+): Promise<{ ok: boolean; error?: string }> {
   const supabase = await createClient();
-  const now = new Date().toISOString();
 
-  const { data: existing } = await supabase
-    .from("conversation_reads")
-    .select("conversation_id")
+  const { data: latestMessage } = await supabase
+    .from("messages")
+    .select("created_at")
     .eq("conversation_id", conversationId)
-    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
-  if (existing) {
-    await supabase
-      .from("conversation_reads")
-      .update({ last_read_at: now })
-      .eq("conversation_id", conversationId)
-      .eq("user_id", userId);
-  } else {
-    await supabase.from("conversation_reads").insert({
+  const lastReadAt =
+    latestMessage?.created_at ?? new Date().toISOString();
+
+  const { error } = await supabase.from("conversation_reads").upsert(
+    {
       conversation_id: conversationId,
       user_id: userId,
-      last_read_at: now,
-    });
+      last_read_at: lastReadAt,
+    },
+    { onConflict: "conversation_id,user_id" },
+  );
+
+  if (error) {
+    console.error("Olvasottnak jelölési hiba:", error.message);
+    return { ok: false, error: error.message };
   }
+
+  return { ok: true };
 }

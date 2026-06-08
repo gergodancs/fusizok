@@ -44,6 +44,8 @@ export async function shareContact(bidId: string) {
     .maybeSingle();
 
   if (bid.contact_shared && existingConversation) {
+    revalidatePath("/lakos", "layout");
+    revalidatePath("/szaki", "layout");
     revalidatePath("/lakos/ajanlatok");
     revalidatePath("/lakos/uzenetek");
     redirect(`/lakos/uzenetek/${existingConversation.id}`);
@@ -57,6 +59,7 @@ export async function shareContact(bidId: string) {
       .update({
         contact_shared: true,
         contact_shared_at: now,
+        status: "accepted",
       })
       .eq("id", bidId);
 
@@ -100,6 +103,8 @@ export async function shareContact(bidId: string) {
     }
   }
 
+  revalidatePath("/lakos", "layout");
+  revalidatePath("/szaki", "layout");
   revalidatePath("/lakos/ajanlatok");
   revalidatePath("/lakos/uzenetek");
   revalidatePath("/szaki/uzenetek");

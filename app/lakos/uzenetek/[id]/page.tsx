@@ -7,7 +7,6 @@ import {
   getConversationHeader,
   getConversationMessages,
 } from "@/lib/conversations";
-import { markConversationRead } from "@/lib/notifications";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
 type LakosChatPageProps = {
@@ -35,8 +34,6 @@ export default async function LakosChatPage({ params }: LakosChatPageProps) {
   if (!canAccess) {
     notFound();
   }
-
-  await markConversationRead(id, user.id);
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">

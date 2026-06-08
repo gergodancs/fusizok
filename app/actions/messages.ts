@@ -56,7 +56,10 @@ export async function sendMessage(
     return { error: "Az üzenet küldése sikertelen." };
   }
 
+  revalidatePath("/lakos", "layout");
+  revalidatePath("/szaki", "layout");
   revalidatePath(`/szaki/uzenetek/${conversationId}`);
+  revalidatePath(`/lakos/uzenetek/${conversationId}`);
   revalidatePath("/szaki/uzenetek");
   revalidatePath("/lakos/uzenetek");
   return {};

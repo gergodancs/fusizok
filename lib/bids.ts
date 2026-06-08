@@ -25,10 +25,10 @@ function categorizeBids(bids: BidWithJob[]): CraftsmanActivity {
   const closed: BidWithJob[] = [];
 
   for (const bid of bids) {
-    if (bid.status === "accepted") {
-      accepted.push(bid);
-    } else if (bid.status === "rejected") {
+    if (bid.status === "rejected") {
       closed.push(bid);
+    } else if (bid.status === "accepted" || bid.contact_shared) {
+      accepted.push(bid);
     } else if (bid.status === "pending") {
       if (bid.job.status === "open" || bid.job.status === "assigned") {
         pending.push(bid);

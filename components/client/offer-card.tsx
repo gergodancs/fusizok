@@ -1,6 +1,6 @@
 import { shareContact } from "@/app/actions/share-contact";
 import type { ClientBidOffer } from "@/lib/client-bids";
-import { getJobBidStatusLabel } from "@/lib/status-labels";
+import { getBidActivityStatusLabel } from "@/lib/status-labels";
 import { btnPrimaryClassName, cardClassName } from "@/lib/ui-classes";
 
 type OfferCardProps = {
@@ -19,8 +19,14 @@ export function OfferCard({ offer }: OfferCardProps) {
             {offer.craftsman_name ?? "Fusizó"}
           </p>
         </div>
-        <span className="rounded-full bg-zinc-700/80 px-2.5 py-1 text-xs text-zinc-400">
-          {getJobBidStatusLabel(offer.status)}
+        <span
+          className={`rounded-full px-2.5 py-1 text-xs ${
+            offer.contact_shared
+              ? "bg-emerald-500/15 font-semibold text-emerald-400"
+              : "bg-zinc-700/80 text-zinc-400"
+          }`}
+        >
+          {getBidActivityStatusLabel(offer)}
         </span>
       </div>
 
