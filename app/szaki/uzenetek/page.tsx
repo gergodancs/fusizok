@@ -1,0 +1,106 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { PageContainer } from "@/components/layout/page-container";
+import { requireCraftsman } from "@/lib/auth/require-craftsman";
+import {
+  findConversationByJob,
+  getUserConversations,
+} from "@/lib/conversations";
+import { getJobStatusLabel } from "@/lib/status-labels";
+import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
+
+export const metadata: Metadata = {
+  title: "Chatek – fusizok.hu",
+  description: "Beszélgetéseid a megrendelőkkel.",
+};
+
+type UzenetekPageProps = {
+  searchParams: Promise<{ job?: string }>;
+};
+
+export default async function SzakiUzenetekPage({
+  searchParams,
+}: UzenetekPageProps) {
+  const { user } = await requireCraftsman("/szaki/uzenetek");
+  const { job: jobId } = await searchParams;
+
+  if (jobId) {
+    const conversationId = await findConversationByJob(
+      user.id,
+      jobId,
+      "craftsman",
+    );
+    if (conversationId) {
+      redirect(`/szaki/uzenetek/${conversationId}`);
+    }
+  }
+
+  const conversations = await getUserConversations(user.id, "craftsman");
+
+  return (
+    <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
+      <PageContainer narrow>
+        <div className="mb-8">
+          <p className={pageEyebrowClassName}>Chatek</p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-zinc-50">
+            Üzenetek
+          </h1>
+          <p className="mt-2 text-zinc-400">
+            Beszélgetéseid a megrendelőkkel konkrét munkákhoz kapcsolódva.
+          </p>
+        </div>
+
+        {conversations.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-800/40 p-12 text-center">
+            <p className="text-lg font-semibold text-zinc-200">
+              Még nincs beszélgetésed
+            </p>
+            <p className="mt-2 text-sm text-zinc-500">
+              Ha pályázol egy munkára, automatikusan létrejön a chat a
+              megrendelővel.
+            </p>
+            <Link
+              href="/szaki"
+              className="mt-6 inline-block text-sm font-medium text-amber-400 hover:text-amber-300"
+            >
+              Böngéssz nyitott munkák között →
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {conversations.map((conv) => (
+              <Link
+                key={conv.id}
+                href={`/szaki/uzenetek/${conv.id}`}
+                className={`block ${cardClassName} p-5 transition hover:border-amber-500/40`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-zinc-100">{conv.job_title}</h3>
+                    <p className="mt-1 text-sm text-zinc-500">
+                      {conv.other_party_name ?? "Megrendelő"} ·{" "}
+                      {getJobStatusLabel(conv.job_status)}
+                    </p>
+                  </div>
+                  {conv.last_message_at && (
+                    <time className="shrink-0 text-xs text-zinc-600">
+                      {new Date(conv.last_message_at).toLocaleDateString(
+                        "hu-HU",
+                      )}
+                    </time>
+                  )}
+                </div>
+                {conv.last_message && (
+                  <p className="mt-3 truncate text-sm text-zinc-400">
+                    {conv.last_message}
+                  </p>
+                )}
+              </Link>
+            ))}
+          </div>
+        )}
+      </PageContainer>
+    </div>
+  );
+}
