@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AuthForm } from "@/components/auth/auth-form";
 import { PageContainer } from "@/components/layout/page-container";
+import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { getAuthContext } from "@/lib/auth/session";
 import { cardClassName } from "@/lib/ui-classes";
 
@@ -11,21 +12,11 @@ export const metadata: Metadata = {
 };
 
 type LoginPageProps = {
-  searchParams: Promise<{ redirect?: string }>;
+  searchParams: Promise<{ redirect?: string; error?: string }>;
 };
 
-function resolvePostLoginPath(
-  redirectParam: string | undefined,
-  role: string | undefined,
-): string {
-  if (redirectParam && redirectParam.startsWith("/")) {
-    return redirectParam;
-  }
-  return role === "craftsman" ? "/szaki" : "/lakos";
-}
-
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { redirect: redirectParam } = await searchParams;
+  const { redirect: redirectParam, error: authError } = await searchParams;
   const { user, profile } = await getAuthContext();
 
   if (user) {
@@ -58,7 +49,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
         </div>
 
         <div className={`w-full max-w-md ${cardClassName} p-6 sm:p-8`}>
-          <AuthForm redirectTo={redirectTo} />
+          <AuthForm redirectTo={redirectTo} authError={authError} />
         </div>
       </PageContainer>
     </div>

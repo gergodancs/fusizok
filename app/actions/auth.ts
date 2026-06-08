@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { createClient } from "@/lib/supabase/server";
 
@@ -45,14 +46,7 @@ export async function login(
   revalidatePath("/", "layout");
 
   const role = data.user?.user_metadata?.role;
-  const destination =
-    redirectTo !== "/"
-      ? redirectTo
-      : role === "craftsman"
-        ? "/szaki"
-        : "/lakos";
-
-  redirect(destination);
+  redirect(resolvePostLoginPath(redirectTo, role));
 }
 
 export async function register(
@@ -97,7 +91,7 @@ export async function register(
   if (data.session && data.user) {
     await syncUserProfile(data.user);
     revalidatePath("/", "layout");
-    redirect(redirectTo);
+    redirect(resolvePostLoginPath(redirectTo, role));
   }
 
   return {

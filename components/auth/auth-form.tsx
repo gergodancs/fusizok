@@ -2,6 +2,8 @@
 
 import { useActionState, useState } from "react";
 import { login, register, type AuthFormState } from "@/app/actions/auth";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import type { UserRole } from "@/lib/types/profile";
 import { btnPrimaryClassName, inputClassName, labelClassName } from "@/lib/ui-classes";
 
 type AuthMode = "login" | "register";
@@ -10,10 +12,12 @@ const initialState: AuthFormState = {};
 
 type AuthFormProps = {
   redirectTo?: string;
+  authError?: string;
 };
 
-export function AuthForm({ redirectTo = "/" }: AuthFormProps) {
+export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const [mode, setMode] = useState<AuthMode>("login");
+  const [registerRole, setRegisterRole] = useState<UserRole>("client");
   const [loginState, loginAction, isLoginPending] = useActionState(
     login,
     initialState,
@@ -26,6 +30,7 @@ export function AuthForm({ redirectTo = "/" }: AuthFormProps) {
   const state = mode === "login" ? loginState : registerState;
   const formAction = mode === "login" ? loginAction : registerAction;
   const isPending = mode === "login" ? isLoginPending : isRegisterPending;
+  const isBusy = isPending;
 
   return (
     <div className="w-full max-w-md">
@@ -54,15 +59,33 @@ export function AuthForm({ redirectTo = "/" }: AuthFormProps) {
         </button>
       </div>
 
+      <GoogleSignInButton
+        redirectTo={redirectTo}
+        role={mode === "register" ? registerRole : undefined}
+        disabled={isBusy}
+      />
+
+      <div className="relative my-6">
+        <div className="absolute inset-0 flex items-center" aria-hidden>
+          <div className="w-full border-t border-zinc-700" />
+        </div>
+        <div className="relative flex justify-center text-xs uppercase tracking-wide">
+          <span className="bg-zinc-800/90 px-3 text-zinc-500">vagy e-maillel</span>
+        </div>
+      </div>
+
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="redirect" value={redirectTo} />
 
-        {state.error && (
+        {(state.error || authError) && (
           <div
             role="alert"
             className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
           >
-            {state.error}
+            {state.error ??
+              (authError === "auth_callback_failed"
+                ? "A Google bejelentkezés sikertelen. Próbáld újra."
+                : authError)}
           </div>
         )}
 
@@ -131,7 +154,8 @@ export function AuthForm({ redirectTo = "/" }: AuthFormProps) {
                   type="radio"
                   name="role"
                   value="client"
-                  defaultChecked
+                  checked={registerRole === "client"}
+                  onChange={() => setRegisterRole("client")}
                   className="mr-3 accent-amber-500"
                 />
                 Segítséget keresek
@@ -141,11 +165,16 @@ export function AuthForm({ redirectTo = "/" }: AuthFormProps) {
                   type="radio"
                   name="role"
                   value="craftsman"
+                  checked={registerRole === "craftsman"}
+                  onChange={() => setRegisterRole("craftsman")}
                   className="mr-3 accent-amber-500"
                 />
                 Fusizni akarok (pénzt keresnék)
               </label>
             </div>
+            <p className="text-xs text-zinc-500">
+              Google-lel regisztráláskor a fenti szerepkör kerül mentésre.
+            </p>
           </div>
         )}
 

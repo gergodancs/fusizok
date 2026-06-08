@@ -16,7 +16,9 @@ export async function syncUserProfile(user: User): Promise<void> {
   const metadata = user.user_metadata ?? {};
   const role = resolveRole(metadata);
   const fullName =
-    typeof metadata.full_name === "string" ? metadata.full_name.trim() : null;
+    (typeof metadata.full_name === "string" && metadata.full_name.trim()) ||
+    (typeof metadata.name === "string" && metadata.name.trim()) ||
+    null;
 
   const { error: profileError } = await supabase.from("profiles").upsert(
     {
