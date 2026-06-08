@@ -1,4 +1,5 @@
 import { CraftsmanNav } from "@/components/layout/craftsman-nav";
+import { PushNotificationPrompt } from "@/components/push/push-notification-prompt";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanNavCounts } from "@/lib/notifications";
 
@@ -15,6 +16,7 @@ export default async function SzakiLayout({
   return (
     <>
       <CraftsmanNav counts={counts} />
+      <PushNotificationPrompt userId={user.id} />
       {children}
     </>
   );

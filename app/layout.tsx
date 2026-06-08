@@ -17,6 +17,12 @@ export const metadata: Metadata = {
   title: "fusizok.hu – Barkács segítség a környéken",
   description:
     "Van fúród? Másodállásban fusizol? A fusizok.hu összeköti a környék barkácsolóit azokkal, akiknek segítség kell.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "fusizok.hu",
+  },
 };
 
 export default function RootLayout({

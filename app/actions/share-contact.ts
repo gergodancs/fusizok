@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { notifyUser } from "@/app/utils/notifications";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -52,8 +53,9 @@ export async function shareContact(bidId: string) {
   }
 
   const now = new Date().toISOString();
+  const isFirstShare = !bid.contact_shared;
 
-  if (!bid.contact_shared) {
+  if (isFirstShare) {
     const { error: updateError } = await supabase
       .from("job_bids")
       .update({
@@ -101,6 +103,20 @@ export async function shareContact(bidId: string) {
       console.error("Üzenet küldési hiba:", msgError.message);
       throw new Error("Az üzenet küldése sikertelen.");
     }
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+
+  if (isFirstShare) {
+    await notifyUser({
+      userId: bid.craftsman_id,
+      title: "Ajánlat elfogadva!",
+      body: `Gratulálunk! ${clientName} elfogadta az ajánlatodat, elindult a chat!`,
+      url: `${appUrl}/szaki/uzenetek/${conversationId}`,
+      emailSubject: `Ajánlat elfogadva – ${job.title}`,
+      emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${clientName} elfogadta az ajánlatodat a(z) <strong>${job.title}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${conversationId}">Chat megnyitása</a></p>`,
+      tag: `bid-accepted-${bidId}`,
+    });
   }
 
   revalidatePath("/lakos", "layout");

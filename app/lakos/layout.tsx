@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { LakosNav } from "@/components/layout/lakos-nav";
+import { PushNotificationPrompt } from "@/components/push/push-notification-prompt";
 import { getAuthContext } from "@/lib/auth/session";
 import { getClientNavCounts } from "@/lib/notifications";
 
@@ -23,7 +24,12 @@ export default async function LakosLayout({
 
   return (
     <>
-      {user && profile?.role === "client" && <LakosNav counts={counts} />}
+      {user && profile?.role === "client" && (
+        <>
+          <LakosNav counts={counts} />
+          <PushNotificationPrompt userId={user.id} />
+        </>
+      )}
       {children}
     </>
   );

@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { notifyUser } from "@/app/utils/notifications";
 import { canUserAccessConversation } from "@/lib/chat-access";
-import { getSessionUser } from "@/lib/auth/session";
+import { getSessionUser, getUserProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 export type SendMessageState = {
@@ -55,6 +56,29 @@ export async function sendMessage(
     console.error("Üzenet küldési hiba:", error.message);
     return { error: "Az üzenet küldése sikertelen." };
   }
+
+  const recipientId =
+    conversation.client_id === user.id
+      ? conversation.craftsman_id
+      : conversation.client_id;
+
+  const senderProfile = await getUserProfile(user.id);
+  const senderName = senderProfile?.full_name ?? "Valaki";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const chatPath =
+    recipientId === conversation.client_id
+      ? `/lakos/uzenetek/${conversationId}`
+      : `/szaki/uzenetek/${conversationId}`;
+
+  await notifyUser({
+    userId: recipientId,
+    title: "Új üzenet",
+    body: `Új üzeneted érkezett tőle: ${senderName}`,
+    url: `${appUrl}${chatPath}`,
+    emailSubject: `Új üzenet – ${senderName}`,
+    emailHtml: `<p>Szia!</p><p><strong>${senderName}</strong> üzenetet küldött neked a fusizok.hu-n.</p><p><a href="${appUrl}${chatPath}">Üzenet megnyitása</a></p>`,
+    tag: `chat-${conversationId}`,
+  });
 
   revalidatePath("/lakos", "layout");
   revalidatePath("/szaki", "layout");
