@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
 import { getAuthContext } from "@/lib/auth/session";
 
 export default async function Home() {
@@ -42,7 +43,9 @@ export default async function Home() {
               azoknak készült, akiknek csak fel kell rakni egy TV-t a falra.
             </p>
 
-            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <PwaNotificationCta />
+
+            <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/lakos"
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-500 px-8 py-4 text-base font-bold text-zinc-900 shadow-xl shadow-amber-500/25 transition hover:bg-amber-400 sm:w-auto"
