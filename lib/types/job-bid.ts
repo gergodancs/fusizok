@@ -1,6 +1,11 @@
 import type { AvailabilityDuration } from "@/lib/availability-options";
 
-export type JobBidStatus = "pending" | "accepted" | "rejected";
+export type JobBidStatus =
+  | "pending"
+  | "accepted"
+  | "rejected"
+  | "active"
+  | "pending_payment";
 
 export type JobBid = {
   id: string;

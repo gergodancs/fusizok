@@ -12,6 +12,8 @@ export const JOB_BID_STATUS_LABELS: Record<JobBidStatus, string> = {
   pending: "Függőben",
   accepted: "Elfogadva",
   rejected: "Elutasítva",
+  active: "Aktív chat",
+  pending_payment: "Fizetésre vár",
 };
 
 export function getJobStatusLabel(status: string): string {

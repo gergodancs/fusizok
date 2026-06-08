@@ -1,146 +1,216 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { notifyUser } from "@/app/utils/notifications";
+import { getAppBaseUrl } from "@/lib/stripe/config";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
+import type {
+  ContactActivationPollResult,
+  ShareContactResult,
+} from "@/lib/types/payments";
 import { createClient } from "@/lib/supabase/server";
 
-export async function shareContact(bidId: string) {
-  const user = await getSessionUser();
-  if (!user) {
-    redirect("/login?redirect=/lakos/ajanlatok");
+type ShareContactRpcResult = {
+  success: boolean;
+  outcome?: string;
+  conversation_id?: string;
+  bid_id?: string;
+  job_id?: string;
+  craftsman_id?: string;
+  used_credit?: boolean;
+  error?: string;
+};
+
+function mapRpcError(error: string | undefined): string {
+  switch (error) {
+    case "bid_not_found":
+      return "Az ajánlat nem található.";
+    case "job_not_found":
+      return "A munka nem található.";
+    case "unauthorized":
+      return "Nincs jogosultságod ehhez az ajánlathoz.";
+    case "job_closed":
+      return "Ez a munka már lezárult vagy törölve lett.";
+    case "bid_rejected":
+      return "Ez az ajánlat el lett utasítva.";
+    default:
+      return "A kapcsolatmegosztás sikertelen.";
   }
+}
 
-  const profile = await getUserProfile(user.id);
-  const clientName = profile?.full_name ?? "A megrendelő";
+async function sendCraftsmanActivationNotification(params: {
+  craftsmanId: string;
+  clientName: string;
+  jobTitle: string;
+  conversationId: string;
+  bidId: string;
+}) {
+  const appUrl = getAppBaseUrl();
 
-  const supabase = await createClient();
-
-  const { data: bid, error: bidError } = await supabase
-    .from("job_bids")
-    .select("id, job_id, craftsman_id, contact_shared")
-    .eq("id", bidId)
-    .maybeSingle();
-
-  if (bidError || !bid) {
-    throw new Error("Az ajánlat nem található.");
-  }
-
-  const { data: job } = await supabase
-    .from("jobs")
-    .select("id, client_id, title")
-    .eq("id", bid.job_id)
-    .maybeSingle();
-
-  if (!job || job.client_id !== user.id) {
-    throw new Error("Nincs jogosultságod ehhez az ajánlathoz.");
-  }
-
-  const { data: existingConversation } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("job_id", job.id)
-    .eq("craftsman_id", bid.craftsman_id)
-    .maybeSingle();
-
-  if (bid.contact_shared && existingConversation) {
-    revalidatePath("/lakos", "layout");
-    revalidatePath("/szaki", "layout");
-    revalidatePath("/lakos/ajanlatok");
-    revalidatePath("/lakos/uzenetek");
-    redirect(`/lakos/uzenetek/${existingConversation.id}`);
-  }
-
-  const now = new Date().toISOString();
-  const isFirstShare = !bid.contact_shared;
-
-  if (isFirstShare) {
-    const { error: updateError } = await supabase
-      .from("job_bids")
-      .update({
-        contact_shared: true,
-        contact_shared_at: now,
-        status: "accepted",
-      })
-      .eq("id", bidId);
-
-    if (updateError) {
-      console.error("[shareContact] Kapcsolatmegosztás hiba:", updateError.message);
-      throw new Error("A kapcsolatmegosztás sikertelen.");
-    }
-  }
-
-  let conversationId = existingConversation?.id;
-
-  if (!conversationId) {
-    const { data: conversation, error: convError } = await supabase
-      .from("conversations")
-      .insert({
-        job_id: job.id,
-        client_id: job.client_id,
-        craftsman_id: bid.craftsman_id,
-      })
-      .select("id")
-      .single();
-
-    if (convError || !conversation) {
-      console.error("[shareContact] Beszélgetés létrehozási hiba:", convError?.message);
-      throw new Error("A chat indítása sikertelen.");
-    }
-
-    conversationId = conversation.id;
-
-    const introMessage = `Szia! ${clientName}-nek tetszik az ajánlatod, mondj róla többet!`;
-
-    const { error: msgError } = await supabase.from("messages").insert({
-      conversation_id: conversationId,
-      sender_id: user.id,
-      content: introMessage,
+  try {
+    const notifyResult = await notifyUser({
+      userId: params.craftsmanId,
+      title: "Ajánlat elfogadva!",
+      body: `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`,
+      url: `${appUrl}/szaki/uzenetek/${params.conversationId}`,
+      emailSubject: `Ajánlat elfogadva – ${params.jobTitle}`,
+      emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${params.clientName} elfogadta az ajánlatodat a(z) <strong>${params.jobTitle}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${params.conversationId}">Chat megnyitása</a></p>`,
+      tag: `bid-accepted-${params.bidId}`,
     });
-
-    if (msgError) {
-      console.error("[shareContact] Üzenet küldési hiba:", msgError.message);
-      throw new Error("Az üzenet küldése sikertelen.");
-    }
+    console.log("[shareContact] Értesítés eredménye:", notifyResult);
+  } catch (notifyErr) {
+    console.error("[shareContact] Értesítés exception:", notifyErr);
   }
+}
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-
-  if (isFirstShare) {
-    console.log("[shareContact] Értesítés küldése a szakinak:", bid.craftsman_id);
-
-    try {
-      const notifyResult = await notifyUser({
-        userId: bid.craftsman_id,
-        title: "Ajánlat elfogadva!",
-        body: `Gratulálunk! ${clientName} elfogadta az ajánlatodat, elindult a chat!`,
-        url: `${appUrl}/szaki/uzenetek/${conversationId}`,
-        emailSubject: `Ajánlat elfogadva – ${job.title}`,
-        emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${clientName} elfogadta az ajánlatodat a(z) <strong>${job.title}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${conversationId}">Chat megnyitása</a></p>`,
-        tag: `bid-accepted-${bidId}`,
-      });
-
-      console.log("[shareContact] Értesítés eredménye:", notifyResult);
-
-      if (!notifyResult.ok) {
-        console.warn(
-          "[shareContact] Értesítés nem sikerült teljesen:",
-          notifyResult.errors,
-        );
-      }
-    } catch (notifyErr) {
-      console.error("[shareContact] Értesítés exception:", notifyErr);
-    }
-  }
-
+function revalidateSharePaths(conversationId?: string) {
   revalidatePath("/lakos", "layout");
   revalidatePath("/szaki", "layout");
   revalidatePath("/lakos/ajanlatok");
   revalidatePath("/lakos/uzenetek");
   revalidatePath("/szaki/uzenetek");
   revalidatePath("/szaki/aktivitas");
-  revalidatePath(`/lakos/uzenetek/${conversationId}`);
+  if (conversationId) {
+    revalidatePath(`/lakos/uzenetek/${conversationId}`);
+    revalidatePath(`/szaki/uzenetek/${conversationId}`);
+  }
+}
 
-  redirect(`/lakos/uzenetek/${conversationId}`);
+export async function initiateShareContact(
+  bidId: string,
+): Promise<ShareContactResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, error: "Bejelentkezés szükséges." };
+  }
+
+  const profile = await getUserProfile(user.id);
+  const clientName = profile?.full_name ?? "A megrendelő";
+  const introMessage = `Szia! ${clientName}-nek tetszik az ajánlatod, mondj róla többet!`;
+
+  const supabase = await createClient();
+
+  console.log("[shareContact] RPC share_contact_with_credit indul", {
+    bidId,
+    clientId: user.id,
+  });
+
+  const { data, error } = await supabase.rpc("share_contact_with_credit", {
+    p_bid_id: bidId,
+    p_client_id: user.id,
+    p_intro_message: introMessage,
+  });
+
+  if (error) {
+    console.error("[shareContact] RPC hiba:", {
+      bidId,
+      message: error.message,
+      code: error.code,
+    });
+    return { ok: false, error: mapRpcError(error.message) };
+  }
+
+  const result = data as ShareContactRpcResult;
+
+  if (!result.success) {
+    console.warn("[shareContact] RPC sikertelen:", { bidId, error: result.error });
+    return { ok: false, error: mapRpcError(result.error) };
+  }
+
+  console.log("[shareContact] RPC eredmény:", result);
+
+  if (result.outcome === "needs_payment") {
+    revalidateSharePaths();
+    return {
+      ok: true,
+      outcome: "needs_payment",
+      bidId: result.bid_id ?? bidId,
+      jobId: result.job_id!,
+      craftsmanId: result.craftsman_id!,
+    };
+  }
+
+  const conversationId = result.conversation_id;
+  if (!conversationId) {
+    return { ok: false, error: "A chat indítása sikertelen." };
+  }
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("title")
+    .eq("id", result.job_id ?? "")
+    .maybeSingle();
+
+  if (result.outcome === "activated" && result.craftsman_id) {
+    await sendCraftsmanActivationNotification({
+      craftsmanId: result.craftsman_id,
+      clientName,
+      jobTitle: job?.title ?? "Munka",
+      conversationId,
+      bidId,
+    });
+  }
+
+  revalidateSharePaths(conversationId);
+
+  return {
+    ok: true,
+    outcome: result.outcome === "already_active" ? "already_active" : "activated",
+    conversationId,
+    craftsmanId: result.craftsman_id!,
+    jobId: result.job_id!,
+    usedCredit: result.used_credit,
+  };
+}
+
+export async function pollContactActivation(
+  bidId: string,
+): Promise<ContactActivationPollResult> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, error: "Bejelentkezés szükséges." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: bid, error } = await supabase
+    .from("job_bids")
+    .select("id, job_id, craftsman_id, contact_shared, status")
+    .eq("id", bidId)
+    .maybeSingle();
+
+  if (error || !bid) {
+    return { ok: false, error: "Az ajánlat nem található." };
+  }
+
+  const { data: job } = await supabase
+    .from("jobs")
+    .select("client_id")
+    .eq("id", bid.job_id)
+    .maybeSingle();
+
+  if (!job || job.client_id !== user.id) {
+    return { ok: false, error: "Nincs jogosultságod." };
+  }
+
+  if (!bid.contact_shared) {
+    return { ok: true, contactShared: false, status: bid.status };
+  }
+
+  const { data: conversation } = await supabase
+    .from("conversations")
+    .select("id")
+    .eq("job_id", bid.job_id)
+    .eq("craftsman_id", bid.craftsman_id)
+    .maybeSingle();
+
+  if (!conversation) {
+    return { ok: true, contactShared: false, status: bid.status };
+  }
+
+  return {
+    ok: true,
+    contactShared: true,
+    conversationId: conversation.id,
+  };
 }
