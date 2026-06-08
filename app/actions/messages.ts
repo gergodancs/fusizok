@@ -53,9 +53,14 @@ export async function sendMessage(
   });
 
   if (error) {
-    console.error("Üzenet küldési hiba:", error.message);
+    console.error("[sendMessage] Üzenet mentési hiba:", error.message);
     return { error: "Az üzenet küldése sikertelen." };
   }
+
+  console.log("[sendMessage] Üzenet mentve, értesítés küldése…", {
+    conversationId,
+    senderId: user.id,
+  });
 
   const recipientId =
     conversation.client_id === user.id
@@ -70,15 +75,31 @@ export async function sendMessage(
       ? `/lakos/uzenetek/${conversationId}`
       : `/szaki/uzenetek/${conversationId}`;
 
-  await notifyUser({
-    userId: recipientId,
-    title: "Új üzenet",
-    body: `Új üzeneted érkezett tőle: ${senderName}`,
-    url: `${appUrl}${chatPath}`,
-    emailSubject: `Új üzenet – ${senderName}`,
-    emailHtml: `<p>Szia!</p><p><strong>${senderName}</strong> üzenetet küldött neked a fusizok.hu-n.</p><p><a href="${appUrl}${chatPath}">Üzenet megnyitása</a></p>`,
-    tag: `chat-${conversationId}`,
-  });
+  const preview =
+    content.length > 120 ? `${content.slice(0, 117)}…` : content;
+
+  try {
+    const notifyResult = await notifyUser({
+      userId: recipientId,
+      title: "Új üzenet",
+      body: `Új üzeneted érkezett tőle: ${senderName} – „${preview}"`,
+      url: `${appUrl}${chatPath}`,
+      emailSubject: `Új üzenet – ${senderName}`,
+      emailHtml: `<p>Szia!</p><p><strong>${senderName}</strong> üzenetet küldött neked:</p><blockquote>${preview}</blockquote><p><a href="${appUrl}${chatPath}">Üzenet megnyitása</a></p>`,
+      tag: `chat-${conversationId}`,
+    });
+
+    console.log("[sendMessage] Értesítés eredménye:", notifyResult);
+
+    if (!notifyResult.ok) {
+      console.warn(
+        "[sendMessage] Értesítés nem sikerült teljesen:",
+        notifyResult.errors,
+      );
+    }
+  } catch (notifyErr) {
+    console.error("[sendMessage] Értesítés exception:", notifyErr);
+  }
 
   revalidatePath("/lakos", "layout");
   revalidatePath("/szaki", "layout");

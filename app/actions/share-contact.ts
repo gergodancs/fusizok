@@ -66,7 +66,7 @@ export async function shareContact(bidId: string) {
       .eq("id", bidId);
 
     if (updateError) {
-      console.error("Kapcsolatmegosztás hiba:", updateError.message);
+      console.error("[shareContact] Kapcsolatmegosztás hiba:", updateError.message);
       throw new Error("A kapcsolatmegosztás sikertelen.");
     }
   }
@@ -85,7 +85,7 @@ export async function shareContact(bidId: string) {
       .single();
 
     if (convError || !conversation) {
-      console.error("Beszélgetés létrehozási hiba:", convError?.message);
+      console.error("[shareContact] Beszélgetés létrehozási hiba:", convError?.message);
       throw new Error("A chat indítása sikertelen.");
     }
 
@@ -100,7 +100,7 @@ export async function shareContact(bidId: string) {
     });
 
     if (msgError) {
-      console.error("Üzenet küldési hiba:", msgError.message);
+      console.error("[shareContact] Üzenet küldési hiba:", msgError.message);
       throw new Error("Az üzenet küldése sikertelen.");
     }
   }
@@ -108,15 +108,30 @@ export async function shareContact(bidId: string) {
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
   if (isFirstShare) {
-    await notifyUser({
-      userId: bid.craftsman_id,
-      title: "Ajánlat elfogadva!",
-      body: `Gratulálunk! ${clientName} elfogadta az ajánlatodat, elindult a chat!`,
-      url: `${appUrl}/szaki/uzenetek/${conversationId}`,
-      emailSubject: `Ajánlat elfogadva – ${job.title}`,
-      emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${clientName} elfogadta az ajánlatodat a(z) <strong>${job.title}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${conversationId}">Chat megnyitása</a></p>`,
-      tag: `bid-accepted-${bidId}`,
-    });
+    console.log("[shareContact] Értesítés küldése a szakinak:", bid.craftsman_id);
+
+    try {
+      const notifyResult = await notifyUser({
+        userId: bid.craftsman_id,
+        title: "Ajánlat elfogadva!",
+        body: `Gratulálunk! ${clientName} elfogadta az ajánlatodat, elindult a chat!`,
+        url: `${appUrl}/szaki/uzenetek/${conversationId}`,
+        emailSubject: `Ajánlat elfogadva – ${job.title}`,
+        emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${clientName} elfogadta az ajánlatodat a(z) <strong>${job.title}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${conversationId}">Chat megnyitása</a></p>`,
+        tag: `bid-accepted-${bidId}`,
+      });
+
+      console.log("[shareContact] Értesítés eredménye:", notifyResult);
+
+      if (!notifyResult.ok) {
+        console.warn(
+          "[shareContact] Értesítés nem sikerült teljesen:",
+          notifyResult.errors,
+        );
+      }
+    } catch (notifyErr) {
+      console.error("[shareContact] Értesítés exception:", notifyErr);
+    }
   }
 
   revalidatePath("/lakos", "layout");

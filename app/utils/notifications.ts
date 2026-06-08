@@ -11,6 +11,15 @@ export type UserNotificationPayload = {
   tag?: string;
 };
 
+export type NotifyResult = {
+  ok: boolean;
+  pushSent: number;
+  pushFailed: number;
+  emailSent: boolean;
+  subscriptionCount: number;
+  errors: string[];
+};
+
 type PushSubscriptionRow = {
   id: string;
   endpoint: string;
@@ -33,95 +42,157 @@ function isPushConfigured(): boolean {
   );
 }
 
-function configureWebPush() {
-  if (!isPushConfigured()) return false;
+function configureWebPush(): boolean {
+  if (!isPushConfigured()) {
+    console.warn(
+      "[notify] VAPID kulcsok hiányoznak – push nem küldhető (NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT).",
+    );
+    return false;
+  }
 
-  webpush.setVapidDetails(
-    process.env.VAPID_SUBJECT!,
-    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-    process.env.VAPID_PRIVATE_KEY!,
-  );
+  try {
+    webpush.setVapidDetails(
+      process.env.VAPID_SUBJECT!,
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
+      process.env.VAPID_PRIVATE_KEY!,
+    );
+    return true;
+  } catch (err) {
+    console.error("[notify] VAPID konfigurációs hiba:", err);
+    return false;
+  }
+}
 
-  return true;
+function requireAdminClient() {
+  const admin = createAdminClient();
+  if (!admin) {
+    console.error(
+      "[notify] SUPABASE_SERVICE_ROLE_KEY hiányzik – push tokenek és e-mail címek nem olvashatók!",
+    );
+  }
+  return admin;
 }
 
 async function getUserEmail(userId: string): Promise<string | null> {
-  const admin = createAdminClient();
+  const admin = requireAdminClient();
   if (!admin) return null;
 
-  const { data, error } = await admin.auth.admin.getUserById(userId);
-  if (error || !data.user?.email) {
-    console.error("E-mail cím lekérdezési hiba:", error?.message);
+  try {
+    const { data, error } = await admin.auth.admin.getUserById(userId);
+    if (error || !data.user?.email) {
+      console.error(
+        "[notify] E-mail cím lekérdezési hiba:",
+        userId,
+        error?.message,
+      );
+      return null;
+    }
+    console.log("[notify] E-mail cím megtalálva:", userId, data.user.email);
+    return data.user.email;
+  } catch (err) {
+    console.error("[notify] getUserEmail exception:", err);
     return null;
   }
-
-  return data.user.email;
 }
 
 async function sendEmail(
   to: string,
   subject: string,
   html: string,
-): Promise<void> {
+): Promise<boolean> {
   const apiKey = process.env.RESEND_API_KEY;
   const from =
     process.env.RESEND_FROM_EMAIL ?? "fusizok.hu <onboarding@resend.dev>";
 
   if (!apiKey) {
-    console.info("[e-mail mock]", { to, subject, html });
-    return;
+    console.info("[notify] [e-mail mock – RESEND_API_KEY nincs beállítva]", {
+      to,
+      subject,
+    });
+    return false;
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ from, to, subject, html }),
-  });
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to, subject, html }),
+    });
 
-  if (!response.ok) {
-    const text = await response.text();
-    console.error("Resend API hiba:", response.status, text);
+    if (!response.ok) {
+      const text = await response.text();
+      console.error("[notify] Resend API hiba:", response.status, text);
+      return false;
+    }
+
+    console.log("[notify] E-mail elküldve:", to, subject);
+    return true;
+  } catch (err) {
+    console.error("[notify] sendEmail exception:", err);
+    return false;
   }
 }
 
 async function getPushSubscriptions(
   userId: string,
 ): Promise<PushSubscriptionRow[]> {
-  const admin = createAdminClient();
+  const admin = requireAdminClient();
   if (!admin) return [];
 
-  const { data, error } = await admin
-    .from("user_push_subscriptions")
-    .select("id, endpoint, p256dh, auth")
-    .eq("user_id", userId);
+  try {
+    const { data, error } = await admin
+      .from("user_push_subscriptions")
+      .select("id, endpoint, p256dh, auth")
+      .eq("user_id", userId);
 
-  if (error) {
-    console.error("Push előfizetések lekérdezési hiba:", error.message);
+    if (error) {
+      console.error(
+        "[notify] Push előfizetések lekérdezési hiba:",
+        userId,
+        error.message,
+      );
+      return [];
+    }
+
+    console.log(
+      "[notify] Push előfizetések:",
+      userId,
+      (data ?? []).length,
+      "db",
+    );
+    return (data ?? []) as PushSubscriptionRow[];
+  } catch (err) {
+    console.error("[notify] getPushSubscriptions exception:", err);
     return [];
   }
-
-  return (data ?? []) as PushSubscriptionRow[];
 }
 
 async function sendPushNotifications(
   userId: string,
   payload: UserNotificationPayload,
-): Promise<void> {
+): Promise<{ sent: number; failed: number; errors: string[] }> {
+  const errors: string[] = [];
+  let sent = 0;
+  let failed = 0;
+
   if (!configureWebPush()) {
-    console.info("[push mock]", {
+    console.info("[notify] [push mock – VAPID nincs konfigurálva]", {
       userId,
       title: payload.title,
       body: payload.body,
-      url: payload.url,
     });
-    return;
+    return { sent: 0, failed: 0, errors: ["VAPID nincs konfigurálva"] };
   }
 
   const subscriptions = await getPushSubscriptions(userId);
-  if (!subscriptions.length) return;
+  if (!subscriptions.length) {
+    const msg = `Nincs push előfizetés a userhez: ${userId}`;
+    console.warn("[notify]", msg);
+    return { sent: 0, failed: 0, errors: [msg] };
+  }
 
   const admin = createAdminClient();
   const pushPayload = JSON.stringify({
@@ -141,51 +212,90 @@ async function sendPushNotifications(
           },
           pushPayload,
         );
+        sent += 1;
+        console.log("[notify] Push elküldve:", userId, sub.endpoint.slice(0, 40));
       } catch (err: unknown) {
+        failed += 1;
         const statusCode =
           err && typeof err === "object" && "statusCode" in err
             ? (err as { statusCode: number }).statusCode
             : null;
+        const message =
+          err && typeof err === "object" && "message" in err
+            ? String((err as { message: string }).message)
+            : String(err);
 
-        if (statusCode === 404 || statusCode === 410) {
+        console.error(
+          "[notify] Push küldési hiba:",
+          userId,
+          statusCode,
+          message,
+        );
+        errors.push(message);
+
+        if ((statusCode === 404 || statusCode === 410) && admin) {
           await admin
-            ?.from("user_push_subscriptions")
+            .from("user_push_subscriptions")
             .delete()
             .eq("id", sub.id);
+          console.log("[notify] Lejárt előfizetés törölve:", sub.id);
         }
-
-        console.error("Push küldési hiba:", err);
       }
     }),
   );
+
+  return { sent, failed, errors };
 }
 
 /**
  * Központi értesítő: e-mail + Web Push a megadott felhasználónak.
- * Hibák esetén nem dob – a fő folyamat ne álljon meg.
  */
 export async function notifyUser(
   payload: UserNotificationPayload,
-): Promise<void> {
+): Promise<NotifyResult> {
+  const result: NotifyResult = {
+    ok: false,
+    pushSent: 0,
+    pushFailed: 0,
+    emailSent: false,
+    subscriptionCount: 0,
+    errors: [],
+  };
+
+  console.log("[notify] === Értesítés indítása ===", {
+    userId: payload.userId,
+    title: payload.title,
+    body: payload.body.slice(0, 80),
+  });
+
   try {
+    const subscriptions = await getPushSubscriptions(payload.userId);
+    result.subscriptionCount = subscriptions.length;
+
+    const pushResult = await sendPushNotifications(payload.userId, payload);
+    result.pushSent = pushResult.sent;
+    result.pushFailed = pushResult.failed;
+    result.errors.push(...pushResult.errors);
+
     const email = await getUserEmail(payload.userId);
     const subject = payload.emailSubject ?? payload.title;
     const html =
       payload.emailHtml ??
       `<p>${payload.body}</p><p><a href="${payload.url ?? getAppUrl()}">Megnyitás a fusizok.hu-n</a></p>`;
 
-    const tasks: Promise<void>[] = [
-      sendPushNotifications(payload.userId, payload),
-    ];
-
     if (email) {
-      tasks.push(sendEmail(email, subject, html));
+      result.emailSent = await sendEmail(email, subject, html);
     } else {
-      console.info("[e-mail skip – nincs cím]", payload.userId, subject);
+      result.errors.push("Nincs e-mail cím vagy hiányzik a service role kulcs");
     }
 
-    await Promise.all(tasks);
+    result.ok = result.pushSent > 0 || result.emailSent;
+
+    console.log("[notify] === Értesítés kész ===", result);
+    return result;
   } catch (err) {
-    console.error("Értesítés küldési hiba:", err);
+    console.error("[notify] notifyUser exception:", err);
+    result.errors.push(err instanceof Error ? err.message : String(err));
+    return result;
   }
 }

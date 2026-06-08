@@ -6,8 +6,45 @@ export type RegisterPushResult = {
   permission: NotificationPermission | "unsupported";
   saved: boolean;
   needsLogin: boolean;
+  subscriptionId?: string;
   error?: string;
 };
+
+async function subscribeWithVapid(
+  registration: ServiceWorkerRegistration,
+  publicKey: string,
+): Promise<PushSubscription> {
+  const existing = await registration.pushManager.getSubscription();
+
+  if (existing) {
+    try {
+      const json = existing.toJSON();
+      if (json.endpoint && json.keys?.p256dh && json.keys?.auth) {
+        return existing;
+      }
+    } catch {
+      await existing.unsubscribe();
+    }
+  }
+
+  try {
+    return await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+    });
+  } catch (err) {
+    console.warn(
+      "[push-register] Első előfizetés sikertelen, újrapróbálás:",
+      err,
+    );
+    const stale = await registration.pushManager.getSubscription();
+    if (stale) await stale.unsubscribe();
+    return registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+    });
+  }
+}
 
 export async function registerPushOnClient(
   saveToServer: boolean,
@@ -40,6 +77,7 @@ export async function registerPushOnClient(
 
     const keyResponse = await fetch("/api/push/vapid-public-key");
     if (!keyResponse.ok) {
+      console.error("[push-register] VAPID API hiba:", keyResponse.status);
       return {
         ok: false,
         permission: Notification.permission,
@@ -56,6 +94,8 @@ export async function registerPushOnClient(
       permission = await Notification.requestPermission();
     }
 
+    console.log("[push-register] Notification permission:", permission);
+
     if (permission !== "granted") {
       return {
         ok: false,
@@ -69,15 +109,9 @@ export async function registerPushOnClient(
       };
     }
 
-    let subscription = await registration.pushManager.getSubscription();
-    if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-      });
-    }
-
+    const subscription = await subscribeWithVapid(registration, publicKey);
     const json = subscription.toJSON();
+
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
       return {
         ok: false,
@@ -87,6 +121,8 @@ export async function registerPushOnClient(
         error: "Az előfizetés létrehozása sikertelen.",
       };
     }
+
+    console.log("[push-register] Push subscription létrejött:", json.endpoint);
 
     if (!saveToServer) {
       return {
@@ -104,6 +140,8 @@ export async function registerPushOnClient(
       userAgent: navigator.userAgent,
     });
 
+    console.log("[push-register] Szerver mentés eredmény:", saveResult);
+
     if (!saveResult.ok) {
       return {
         ok: true,
@@ -119,9 +157,10 @@ export async function registerPushOnClient(
       permission,
       saved: true,
       needsLogin: false,
+      subscriptionId: saveResult.subscriptionId,
     };
   } catch (err) {
-    console.error("Push regisztráció hiba:", err);
+    console.error("[push-register] Exception:", err);
     return {
       ok: false,
       permission: Notification.permission ?? "unsupported",

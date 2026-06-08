@@ -52,15 +52,30 @@ export async function rejectBid(bidId: string) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-  await notifyUser({
-    userId: bid.craftsman_id,
-    title: "Pályázat elutasítva",
-    body: `${clientName} elutasította a(z) „${job.title}” munkára adott ajánlatodat.`,
-    url: `${appUrl}/szaki/aktivitas`,
-    emailSubject: `Pályázat elutasítva – ${job.title}`,
-    emailHtml: `<p>Szia!</p><p><strong>${clientName}</strong> elutasította a(z) <strong>${job.title}</strong> munkára adott pályázatodat.</p><p><a href="${appUrl}/szaki/aktivitas">Megnyitás az Aktivitásom oldalon</a></p>`,
-    tag: `bid-rejected-${bidId}`,
-  });
+  console.log("[rejectBid] Értesítés küldése a szakinak:", bid.craftsman_id);
+
+  try {
+    const notifyResult = await notifyUser({
+      userId: bid.craftsman_id,
+      title: "Pályázat elutasítva",
+      body: `${clientName} elutasította a(z) „${job.title}” munkára adott ajánlatodat.`,
+      url: `${appUrl}/szaki/aktivitas`,
+      emailSubject: `Pályázat elutasítva – ${job.title}`,
+      emailHtml: `<p>Szia!</p><p><strong>${clientName}</strong> elutasította a(z) <strong>${job.title}</strong> munkára adott pályázatodat.</p><p><a href="${appUrl}/szaki/aktivitas">Megnyitás az Aktivitásom oldalon</a></p>`,
+      tag: `bid-rejected-${bidId}`,
+    });
+
+    console.log("[rejectBid] Értesítés eredménye:", notifyResult);
+
+    if (!notifyResult.ok) {
+      console.warn(
+        "[rejectBid] Értesítés nem sikerült teljesen:",
+        notifyResult.errors,
+      );
+    }
+  } catch (notifyErr) {
+    console.error("[rejectBid] Értesítés exception:", notifyErr);
+  }
 
   revalidatePath("/lakos/ajanlatok");
   revalidatePath("/szaki/aktivitas");
