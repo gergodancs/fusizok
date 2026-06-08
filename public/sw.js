@@ -20,8 +20,8 @@ self.addEventListener("push", (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: "/file.svg",
-      badge: "/file.svg",
+      icon: "/pwa-icon-192",
+      badge: "/icons/icon.svg",
       data: { url: payload.url ?? "/" },
       tag: payload.tag ?? "fusizok-notification",
       renotify: true,

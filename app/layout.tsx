@@ -18,10 +18,14 @@ export const metadata: Metadata = {
   description:
     "Van fúród? Másodállásban fusizol? A fusizok.hu összeköti a környék barkácsolóit azokkal, akiknek segítség kell.",
   manifest: "/manifest.json",
+  icons: {
+    icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "fusizok.hu",
+    title: "fusizok",
   },
 };
 
