@@ -28,6 +28,15 @@ export async function createCraftsmanChatCheckoutSession(
     return { ok: false, error: "A fizetési szolgáltatás nincs konfigurálva." };
   }
 
+  const payerEmail = user.email?.trim();
+  if (!payerEmail) {
+    return {
+      ok: false,
+      error:
+        "A fizetéshez e-mail cím szükséges. Jelentkezz be e-mail címmel, vagy add meg a fiókodban.",
+    };
+  }
+
   const supabase = await createClient();
 
   const { data: bid, error: bidError } = await supabase
@@ -89,6 +98,7 @@ export async function createCraftsmanChatCheckoutSession(
       {
         mode: "payment",
         ui_mode: "elements",
+        customer_email: payerEmail,
         line_items: [
           {
             price_data: {

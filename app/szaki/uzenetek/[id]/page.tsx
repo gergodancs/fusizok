@@ -66,6 +66,7 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
             conversationId={id}
             jobTitle={header.jobTitle}
             priceHuf={getStripeContactUnlockPriceHuf()}
+            payerEmail={user.email ?? ""}
           />
         )}
 

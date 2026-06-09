@@ -24,6 +24,7 @@ type ContactPaymentModalProps = {
   submitLabel?: string;
   pollUnlock?: () => Promise<boolean>;
   onPaymentConfirmed?: (sessionId: string) => Promise<void>;
+  payerEmail?: string;
 };
 
 function getConfirmErrorMessage(confirmResult: unknown): string | null {
@@ -90,6 +91,7 @@ export function ContactPaymentModal({
   submitLabel = "Fizetés és chat indítása",
   pollUnlock,
   onPaymentConfirmed,
+  payerEmail,
 }: ContactPaymentModalProps) {
   const paymentElementRef = useRef<HTMLDivElement>(null);
   const checkoutSdkRef = useRef<StripeCheckoutElementsSdk | null>(null);
@@ -188,7 +190,24 @@ export function ContactPaymentModal({
           return;
         }
 
-        const confirmResult = await loadResult.actions.confirm();
+        const email = payerEmail?.trim();
+        if (!email) {
+          setError(
+            "Az e-mail cím hiányzik a fizetéshez. Frissítsd az oldalt, vagy jelentkezz be újra.",
+          );
+          setPaying(false);
+          return;
+        }
+
+        const emailUpdate = await loadResult.actions.updateEmail(email);
+        const emailUpdateError = getConfirmErrorMessage(emailUpdate);
+        if (emailUpdateError) {
+          setError(emailUpdateError);
+          setPaying(false);
+          return;
+        }
+
+        const confirmResult = await loadResult.actions.confirm({ email });
         const confirmError = getConfirmErrorMessage(confirmResult);
 
         if (confirmError) {
@@ -227,6 +246,7 @@ export function ContactPaymentModal({
       loading,
       onPaymentConfirmed,
       onSuccess,
+      payerEmail,
       paying,
       pollUnlock,
     ],
