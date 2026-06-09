@@ -11,7 +11,7 @@ export default async function Home() {
   }
 
   if (user && profile?.role === "client") {
-    redirect("/lakos");
+    redirect("/lakos/ajanlatok");
   }
 
   return (

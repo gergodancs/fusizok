@@ -1,11 +1,11 @@
 "use server";
 
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
-import { applyCraftsmanLocationGps } from "@/lib/location/gps-db";
 import {
   parseLocationFromFormData,
   parseServiceRadiusKm,
 } from "@/lib/location/parse-location-form";
+import { persistCraftsmanLocation } from "@/lib/location/persist-location";
 import { revalidatePath } from "next/cache";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import { getSessionUser } from "@/lib/auth/session";
@@ -56,39 +56,26 @@ export async function updateCraftsmanProfile(
 
   const supabase = await createClient();
 
-  const payload: Record<string, unknown> =
-    location.mode === "gps"
-      ? {
-          id: user.id,
-          profession: selectedCategories.join(", "),
-          county: null,
-          city: null,
-          coverage_counties: [],
-          coverage_zip_codes: [],
-          service_radius_km: serviceRadiusKm,
-          bio,
-        }
-      : {
-          id: user.id,
-          profession: selectedCategories.join(", "),
-          county: location.county,
-          city: location.city,
-          coverage_counties: [location.county],
-          coverage_zip_codes: [location.city],
-          service_radius_km: serviceRadiusKm,
-          bio,
-        };
-
-  const { error } = await supabase
-    .from("craftsman_profiles")
-    .upsert(payload, { onConflict: "id" });
+  const { error } = await supabase.from("craftsman_profiles").upsert(
+    {
+      id: user.id,
+      profession: selectedCategories.join(", "),
+      bio,
+    },
+    { onConflict: "id" },
+  );
 
   if (error) {
     console.error("Fusizó profil mentési hiba:", error.message);
     return { error: "A profil mentése sikertelen. Próbáld újra." };
   }
 
-  await applyCraftsmanLocationGps(supabase, user.id, location);
+  await persistCraftsmanLocation(
+    supabase,
+    user.id,
+    location,
+    serviceRadiusKm,
+  );
 
   revalidatePath("/szaki");
   revalidatePath("/szaki/profil");

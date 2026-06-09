@@ -140,16 +140,17 @@ export function formatJobLocation(job: {
   zip_code?: string | null;
   location_gps?: unknown | null;
 }): string {
+  const placeName = job.city ?? job.zip_code;
+  const area = normalizeCoverageArea(job.county, placeName);
+  if (area) {
+    return formatLocationLabel(area.county, area.place);
+  }
+
   if (job.location_gps) {
     return "GPS – pontos helyszín";
   }
 
-  const placeName = job.city ?? job.zip_code;
-  const area = normalizeCoverageArea(job.county, placeName);
-  if (!area) {
-    return placeName?.trim() || "—";
-  }
-  return formatLocationLabel(area.county, area.place);
+  return placeName?.trim() || "—";
 }
 
 export function isValidJobLocation(county: string, place: string): boolean {

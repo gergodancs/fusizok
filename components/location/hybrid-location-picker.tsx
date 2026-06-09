@@ -99,12 +99,44 @@ export function HybridLocationPicker({
     setMode("gps");
     setLat(result.latitude);
     setLng(result.longitude);
-    setCounty("");
-    setCity("");
     setShowManual(false);
     setGpsStatus("success");
-    setGpsMessage("Pozíció rögzítve");
-    emitState("gps", result.latitude, result.longitude, "", "");
+
+    let label = "Pozíció rögzítve";
+    try {
+      const response = await fetch(
+        `/api/geocode/reverse?lat=${result.latitude}&lng=${result.longitude}`,
+      );
+      if (response.ok) {
+        const data = (await response.json()) as {
+          label?: string;
+          county?: string;
+          city?: string;
+        };
+        if (data.label) {
+          label = `Pozíció rögzítve: ${data.label}`;
+        }
+        setCounty(data.county ?? "");
+        setCity(data.city ?? "");
+        emitState(
+          "gps",
+          result.latitude,
+          result.longitude,
+          data.county ?? "",
+          data.city ?? "",
+        );
+      } else {
+        setCounty("");
+        setCity("");
+        emitState("gps", result.latitude, result.longitude, "", "");
+      }
+    } catch {
+      setCounty("");
+      setCity("");
+      emitState("gps", result.latitude, result.longitude, "", "");
+    }
+
+    setGpsMessage(label);
   }
 
   function handleManualToggle() {

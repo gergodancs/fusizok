@@ -5,8 +5,9 @@ import {
 } from "@/lib/completion-time-options";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import type { JobFormDraft } from "@/lib/job-form-draft";
-import { applyJobLocationGps } from "@/lib/location/gps-db";
+import { scheduleNotifyMatchingCraftsmen } from "@/lib/location/notify-craftsmen-for-job";
 import { parseLocationFromFormData } from "@/lib/location/parse-location-form";
+import { persistJobLocation } from "@/lib/location/persist-location";
 import { uploadJobImages } from "@/lib/storage/upload-job-images";
 import { createClient } from "@/lib/supabase/server";
 
@@ -71,7 +72,7 @@ export async function createJob(
   }
 
   if (!description) {
-    return { error: "Kérjük, írja le részletesen a munkát.", draft };
+    return { error: "Kérjük, írja le részetesen a munkát.", draft };
   }
 
   if (
@@ -111,32 +112,18 @@ export async function createJob(
     return { error: uploadError, draft };
   }
 
-  const payload: JobInsert =
-    location.mode === "gps"
-      ? {
-          client_id: user.id,
-          title,
-          description,
-          category,
-          county: null,
-          city: null,
-          zip_code: null,
-          status: "open",
-          required_completion_time: requiredCompletionTime,
-          image_urls: imageUrls,
-        }
-      : {
-          client_id: user.id,
-          title,
-          description,
-          category,
-          county: location.county,
-          city: location.city,
-          zip_code: location.city,
-          status: "open",
-          required_completion_time: requiredCompletionTime,
-          image_urls: imageUrls,
-        };
+  const payload: JobInsert = {
+    client_id: user.id,
+    title,
+    description,
+    category,
+    county: null,
+    city: null,
+    zip_code: null,
+    status: "open",
+    required_completion_time: requiredCompletionTime,
+    image_urls: imageUrls,
+  };
 
   const { data: insertedJob, error } = await supabase
     .from("jobs")
@@ -146,11 +133,20 @@ export async function createJob(
 
   if (error || !insertedJob) {
     console.error("Supabase mentési hiba:", error);
-    console.error("Beszúrandó adatok:", payload);
     return { error: "A mentés sikertelen. Kérjük, próbálja újra később.", draft };
   }
 
-  await applyJobLocationGps(supabase, insertedJob.id, location);
+  const resolved = await persistJobLocation(supabase, insertedJob.id, location);
+
+  scheduleNotifyMatchingCraftsmen({
+    id: insertedJob.id,
+    title,
+    category,
+    county: resolved.county,
+    city: resolved.city,
+    zip_code: resolved.city,
+    location_gps: resolved.latitude !== null ? true : null,
+  });
 
   return { success: true };
 }

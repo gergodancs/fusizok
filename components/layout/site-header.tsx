@@ -1,17 +1,49 @@
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/auth/session";
+import type { UserRole } from "@/lib/types/profile";
+
+function resolveRole(
+  profileRole: UserRole | undefined,
+  metadataRole: unknown,
+): UserRole | null {
+  if (profileRole === "craftsman" || profileRole === "client") {
+    return profileRole;
+  }
+  if (metadataRole === "craftsman") {
+    return "craftsman";
+  }
+  if (metadataRole === "client") {
+    return "client";
+  }
+  return null;
+}
+
+function resolveHomeHref(role: UserRole | null): string {
+  if (role === "craftsman") {
+    return "/szaki";
+  }
+  if (role === "client") {
+    return "/lakos/ajanlatok";
+  }
+  return "/";
+}
 
 export async function SiteHeader() {
   const { user, profile } = await getAuthContext();
-  const isCraftsman = profile?.role === "craftsman";
-  const isClient = profile?.role === "client";
+  const role = resolveRole(
+    profile?.role,
+    user?.user_metadata?.role,
+  );
+  const homeHref = resolveHomeHref(role);
+  const isCraftsman = role === "craftsman";
+  const isClient = role === "client";
 
   return (
     <header className="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-md">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
         <Link
-          href={isCraftsman ? "/szaki" : isClient ? "/lakos" : "/"}
+          href={homeHref}
           className="group flex items-center gap-2.5"
         >
           <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-amber-500 text-sm font-black text-zinc-900 shadow-md shadow-amber-500/30 transition group-hover:bg-amber-400">

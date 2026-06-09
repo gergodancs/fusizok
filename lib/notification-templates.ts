@@ -101,6 +101,25 @@ export function buildChatUnlockedEmailHtml(params: {
   );
 }
 
+export function buildNewNearbyJobEmailHtml(params: {
+  jobTitle: string;
+  locationLabel: string;
+  category: string;
+  jobUrl: string;
+}): string {
+  return emailLayout(
+    "Új munka a közeledben",
+    `<p>Új meló érkezett, ami passzol a profilodhoz:</p>
+<ul style="margin: 16px 0; padding-left: 20px;">
+  <li><strong>${escapeHtml(params.jobTitle)}</strong></li>
+  <li>Kategória: ${escapeHtml(params.category)}</li>
+  <li>Helyszín: ${escapeHtml(params.locationLabel)}</li>
+</ul>
+<p>Böngészd a részleteket és pályázz, ha érdekel!</p>`,
+    params.jobUrl,
+  );
+}
+
 export function buildJobCompletedEmailHtml(params: {
   clientName: string;
   jobTitle: string;
