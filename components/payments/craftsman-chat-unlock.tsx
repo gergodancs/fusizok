@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import {
+  completeCraftsmanChatPaymentAfterCheckout,
   createCraftsmanChatCheckoutSession,
   pollCraftsmanChatUnlock,
 } from "@/app/actions/create-craftsman-chat-checkout";
@@ -36,6 +37,7 @@ export function CraftsmanChatUnlock({
   const [error, setError] = useState<string | null>(null);
   const [paymentModal, setPaymentModal] = useState<{
     clientSecret: string;
+    sessionId: string;
   } | null>(null);
 
   const handleUnlock = useCallback(async () => {
@@ -56,7 +58,10 @@ export function CraftsmanChatUnlock({
         return;
       }
 
-      setPaymentModal({ clientSecret: checkout.clientSecret });
+      setPaymentModal({
+        clientSecret: checkout.clientSecret,
+        sessionId: checkout.sessionId,
+      });
       setLoading(false);
     } catch (err) {
       console.error("[CraftsmanChatUnlock] hiba:", err);
@@ -118,8 +123,12 @@ export function CraftsmanChatUnlock({
           jobTitle={jobTitle}
           craftsmanName="Chat válasz jogosultság"
           clientSecret={paymentModal.clientSecret}
+          checkoutSessionId={paymentModal.sessionId}
           onClose={() => setPaymentModal(null)}
           onSuccess={() => void handlePaymentSuccess()}
+          onPaymentConfirmed={async (sessionId) => {
+            await completeCraftsmanChatPaymentAfterCheckout(sessionId, bidId);
+          }}
           title="Válaszadás aktiválása"
           description="Az ingyenes kapcsolatfelvételeid elfogytak. Fizess a válaszadáshoz – Apple Pay, Google Pay és bankkártya is használható."
           submitLabel="Fizetés és válaszadás"

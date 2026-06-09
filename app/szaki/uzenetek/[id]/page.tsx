@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { PageContainer } from "@/components/layout/page-container";
 import { CraftsmanChatUnlock } from "@/components/payments/craftsman-chat-unlock";
+import { CraftsmanPaymentReturn } from "@/components/payments/craftsman-payment-return";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import {
   getConversationHeader,
@@ -38,6 +40,9 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
+      <Suspense fallback={null}>
+        <CraftsmanPaymentReturn conversationId={id} />
+      </Suspense>
       <PageContainer narrow>
         <div className="mb-6">
           <Link

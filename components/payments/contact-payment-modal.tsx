@@ -16,13 +16,36 @@ type ContactPaymentModalProps = {
   jobTitle: string;
   craftsmanName: string;
   clientSecret: string;
+  checkoutSessionId?: string;
   onClose: () => void;
   onSuccess: () => void;
   title?: string;
   description?: string;
   submitLabel?: string;
   pollUnlock?: () => Promise<boolean>;
+  onPaymentConfirmed?: (sessionId: string) => Promise<void>;
 };
+
+function getConfirmErrorMessage(confirmResult: unknown): string | null {
+  if (!confirmResult || typeof confirmResult !== "object") {
+    return null;
+  }
+
+  const result = confirmResult as {
+    type?: string;
+    error?: { message?: string };
+  };
+
+  if (result.type === "error" && result.error?.message) {
+    return result.error.message;
+  }
+
+  if (result.error?.message) {
+    return result.error.message;
+  }
+
+  return null;
+}
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? "",
@@ -59,12 +82,14 @@ export function ContactPaymentModal({
   jobTitle,
   craftsmanName,
   clientSecret,
+  checkoutSessionId,
   onClose,
   onSuccess,
   title = "Kapcsolat megosztása",
   description = "Apple Pay, Google Pay és bankkártya is használható.",
   submitLabel = "Fizetés és chat indítása",
   pollUnlock,
+  onPaymentConfirmed,
 }: ContactPaymentModalProps) {
   const paymentElementRef = useRef<HTMLDivElement>(null);
   const checkoutSdkRef = useRef<StripeCheckoutElementsSdk | null>(null);
@@ -164,11 +189,16 @@ export function ContactPaymentModal({
         }
 
         const confirmResult = await loadResult.actions.confirm();
+        const confirmError = getConfirmErrorMessage(confirmResult);
 
-        if (confirmResult.type === "error") {
-          setError(confirmResult.error.message ?? "A fizetés sikertelen.");
+        if (confirmError) {
+          setError(confirmError);
           setPaying(false);
           return;
+        }
+
+        if (checkoutSessionId && onPaymentConfirmed) {
+          await onPaymentConfirmed(checkoutSessionId);
         }
 
         const unlocked = await waitForUnlock(bidId, pollUnlock);
@@ -183,11 +213,23 @@ export function ContactPaymentModal({
         onSuccess();
       } catch (err) {
         console.error("[ContactPaymentModal] confirm hiba:", err);
-        setError("Váratlan hiba történt a fizetés során.");
+        const message =
+          err instanceof Error && err.message
+            ? err.message
+            : "Váratlan hiba történt a fizetés során.";
+        setError(message);
         setPaying(false);
       }
     },
-    [bidId, loading, onSuccess, paying, pollUnlock],
+    [
+      bidId,
+      checkoutSessionId,
+      loading,
+      onPaymentConfirmed,
+      onSuccess,
+      paying,
+      pollUnlock,
+    ],
   );
 
   return (

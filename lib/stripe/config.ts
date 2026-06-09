@@ -10,10 +10,19 @@ export function getStripeContactUnlockPriceHuf(): number {
 }
 
 export function getAppBaseUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000"
-  );
+  const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/$/, "");
+  if (fromEnv) {
+    return fromEnv;
+  }
+
+  const vercelHost = process.env.VERCEL_URL?.trim().replace(/\/$/, "");
+  if (vercelHost) {
+    return vercelHost.startsWith("http")
+      ? vercelHost
+      : `https://${vercelHost}`;
+  }
+
+  return "http://localhost:3000";
 }
 
 export function isStripeConfigured(): boolean {
