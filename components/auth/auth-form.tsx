@@ -15,9 +15,55 @@ type AuthFormProps = {
   authError?: string;
 };
 
+function RoleSelection({
+  selectedRole,
+  onRoleChange,
+}: {
+  selectedRole: UserRole | null;
+  onRoleChange: (role: UserRole) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <span className={labelClassName}>
+        Mit szeretnél csinálni a fusizok.hu-n?{" "}
+        <span className="text-amber-500">*</span>
+      </span>
+      <div className="grid gap-3 sm:grid-cols-1">
+        <label className="flex cursor-pointer items-center rounded-xl border border-zinc-600 bg-zinc-800/80 px-4 py-3 text-sm font-medium text-zinc-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10 has-[:checked]:text-amber-400">
+          <input
+            type="radio"
+            name="role_choice"
+            value="client"
+            checked={selectedRole === "client"}
+            onChange={() => onRoleChange("client")}
+            className="mr-3 accent-amber-500"
+          />
+          Segítséget keresek – munkát akarok feladni
+        </label>
+        <label className="flex cursor-pointer items-center rounded-xl border border-zinc-600 bg-zinc-800/80 px-4 py-3 text-sm font-medium text-zinc-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10 has-[:checked]:text-amber-400">
+          <input
+            type="radio"
+            name="role_choice"
+            value="craftsman"
+            checked={selectedRole === "craftsman"}
+            onChange={() => onRoleChange("craftsman")}
+            className="mr-3 accent-amber-500"
+          />
+          Fusizni akarok – munkákat vállalnék
+        </label>
+      </div>
+      {!selectedRole && (
+        <p className="text-xs text-zinc-500">
+          A bejelentkezéshez előbb válaszd ki az egyik opciót.
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const [mode, setMode] = useState<AuthMode>("login");
-  const [registerRole, setRegisterRole] = useState<UserRole>("client");
+  const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [loginState, loginAction, isLoginPending] = useActionState(
     login,
     initialState,
@@ -31,9 +77,17 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const formAction = mode === "login" ? loginAction : registerAction;
   const isPending = mode === "login" ? isLoginPending : isRegisterPending;
   const isBusy = isPending;
+  const canAuthenticate = selectedRole !== null;
 
   return (
     <div className="w-full max-w-md">
+      <div className="mb-6">
+        <RoleSelection
+          selectedRole={selectedRole}
+          onRoleChange={setSelectedRole}
+        />
+      </div>
+
       <div className="mb-8 flex rounded-xl bg-zinc-900 p-1 ring-1 ring-zinc-700">
         <button
           type="button"
@@ -61,8 +115,8 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
       <GoogleSignInButton
         redirectTo={redirectTo}
-        role={mode === "register" ? registerRole : undefined}
-        disabled={isBusy}
+        role={selectedRole ?? undefined}
+        disabled={isBusy || !canAuthenticate}
       />
 
       <div className="relative my-6">
@@ -76,6 +130,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="redirect" value={redirectTo} />
+        {selectedRole && <input type="hidden" name="role" value={selectedRole} />}
 
         {(state.error || authError) && (
           <div
@@ -108,6 +163,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
               name="full_name"
               type="text"
               required
+              disabled={!canAuthenticate}
               placeholder="Kovács János"
               className={inputClassName}
             />
@@ -123,6 +179,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
             name="email"
             type="email"
             required
+            disabled={!canAuthenticate}
             autoComplete="email"
             placeholder="nev@email.hu"
             className={inputClassName}
@@ -138,6 +195,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
             name="password"
             type="password"
             required
+            disabled={!canAuthenticate}
             minLength={6}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             placeholder="••••••••"
@@ -145,49 +203,18 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
           />
         </div>
 
-        {mode === "register" && (
-          <div className="space-y-2">
-            <span className={labelClassName}>Fiók típusa</span>
-            <div className="grid gap-3 sm:grid-cols-1">
-              <label className="flex cursor-pointer items-center rounded-xl border border-zinc-600 bg-zinc-800/80 px-4 py-3 text-sm font-medium text-zinc-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10 has-[:checked]:text-amber-400">
-                <input
-                  type="radio"
-                  name="role"
-                  value="client"
-                  checked={registerRole === "client"}
-                  onChange={() => setRegisterRole("client")}
-                  className="mr-3 accent-amber-500"
-                />
-                Segítséget keresek
-              </label>
-              <label className="flex cursor-pointer items-center rounded-xl border border-zinc-600 bg-zinc-800/80 px-4 py-3 text-sm font-medium text-zinc-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10 has-[:checked]:text-amber-400">
-                <input
-                  type="radio"
-                  name="role"
-                  value="craftsman"
-                  checked={registerRole === "craftsman"}
-                  onChange={() => setRegisterRole("craftsman")}
-                  className="mr-3 accent-amber-500"
-                />
-                Fusizni akarok (pénzt keresnék)
-              </label>
-            </div>
-            <p className="text-xs text-zinc-500">
-              Google-lel regisztráláskor a fenti szerepkör kerül mentésre.
-            </p>
-          </div>
-        )}
-
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isPending || !canAuthenticate}
           className={`w-full ${btnPrimaryClassName}`}
         >
           {isPending
             ? "Folyamatban…"
-            : mode === "login"
-              ? "Bejelentkezés"
-              : "Fiók létrehozása"}
+            : !canAuthenticate
+              ? "Válassz fiók típust a folytatáshoz"
+              : mode === "login"
+                ? "Bejelentkezés"
+                : "Fiók létrehozása"}
         </button>
       </form>
     </div>

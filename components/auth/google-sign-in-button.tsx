@@ -7,7 +7,7 @@ import { btnSecondaryClassName } from "@/lib/ui-classes";
 
 type GoogleSignInButtonProps = {
   redirectTo: string;
-  /** Regisztrációnál: fusizó vagy lakos szerepkör átadása az OAuth metadata-ba */
+  /** Regisztrációnál vagy /szaki redirectnél: fusizó/lakos szerepkör */
   role?: UserRole;
   disabled?: boolean;
 };
@@ -67,7 +67,12 @@ export function GoogleSignInButton({
       const supabase = createClient();
       const origin = window.location.origin;
       const safeNext = redirectTo.startsWith("/") ? redirectTo : "/";
-      const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(safeNext)}`;
+
+      const callbackParams = new URLSearchParams({ next: safeNext });
+      if (role) {
+        callbackParams.set("role", role);
+      }
+      const callbackUrl = `${origin}/auth/callback?${callbackParams.toString()}`;
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -77,7 +82,6 @@ export function GoogleSignInButton({
             access_type: "offline",
             prompt: "select_account",
           },
-          ...(role ? { data: { role } } : {}),
         },
       });
 

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSiteUrl } from "@/lib/auth/get-site-url";
+import { parseOAuthRoleParam } from "@/lib/auth/oauth-role";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { createClient } from "@/lib/supabase/server";
@@ -8,10 +9,10 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
   const nextParam = searchParams.get("next");
+  const roleHint = parseOAuthRoleParam(searchParams.get("role"));
   const siteUrl = getSiteUrl(request);
 
-  let next =
-    nextParam && nextParam.startsWith("/") ? nextParam : "/";
+  let next = nextParam && nextParam.startsWith("/") ? nextParam : "/";
 
   if (code) {
     const supabase = await createClient();
@@ -24,16 +25,34 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (roleHint) {
+      const { error: roleError } = await supabase.auth.updateUser({
+        data: { role: roleHint },
+      });
+
+      if (roleError) {
+        console.error(
+          "[auth/callback] Szerepkör metadata frissítési hiba:",
+          roleError.message,
+        );
+      } else {
+        console.log("[auth/callback] Szerepkör beállítva:", roleHint);
+      }
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (user) {
       await syncUserProfile(user);
+
       const role =
-        typeof user.user_metadata?.role === "string"
+        roleHint ??
+        (typeof user.user_metadata?.role === "string"
           ? user.user_metadata.role
-          : undefined;
+          : undefined);
+
       next = resolvePostLoginPath(next, role);
     }
 
