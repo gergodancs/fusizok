@@ -72,7 +72,7 @@ export default async function Home() {
             },
             {
               title: "A környékeden",
-              text: "Kerület alapján találod meg a közelben fusizókat, akiknek van idejük és szerszámuk.",
+              text: "Megye és település alapján találod meg a közelben fusizókat, akiknek van idejük és szerszámuk.",
             },
             {
               title: "Egyszerűen",

@@ -8,18 +8,19 @@ import {
 } from "@/app/actions/craftsman-profile";
 import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile-fields";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
+import type { CoverageArea } from "@/lib/places";
 
 const initialState: CraftsmanProfileFormState = {};
 
 type CraftsmanProfileFormProps = {
-  defaultDistricts?: string[];
+  defaultCoverageAreas?: CoverageArea[];
   defaultCategories?: string[];
   defaultBio?: string | null;
   redirectOnSuccess?: string;
 };
 
 export function CraftsmanProfileForm({
-  defaultDistricts = [],
+  defaultCoverageAreas = [],
   defaultCategories = [],
   defaultBio = null,
   redirectOnSuccess = "/szaki",
@@ -53,7 +54,7 @@ export function CraftsmanProfileForm({
 
       <CraftsmanProfileFields
         defaultCategories={defaultCategories}
-        defaultDistricts={defaultDistricts}
+        defaultCoverageAreas={defaultCoverageAreas}
         defaultBio={defaultBio}
       />
 

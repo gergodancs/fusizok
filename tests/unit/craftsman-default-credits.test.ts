@@ -45,6 +45,7 @@ describe("1. Új fusizó regisztráció – ingyenes kredit", () => {
     expect(craftsmanUpsert).toHaveBeenCalledTimes(1);
     const payload = craftsmanUpsert.mock.calls[0]![0] as Record<string, unknown>;
     expect(payload.id).toBe("craftsman-new");
+    expect(payload.coverage_counties).toEqual([]);
     expect(payload.coverage_zip_codes).toEqual([]);
     expect(payload).not.toHaveProperty("free_credits");
   });

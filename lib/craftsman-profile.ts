@@ -1,9 +1,10 @@
-import { normalizeDistricts, normalizeProfessions } from "@/lib/craftsman";
+import { normalizeProfessions } from "@/lib/craftsman";
+import { normalizeCoverageAreas, type CoverageArea } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 
 export type CraftsmanProfileEdit = {
   professions: string[];
-  districts: string[];
+  coverageAreas: CoverageArea[];
   bio: string | null;
 };
 
@@ -14,18 +15,21 @@ export async function getCraftsmanProfileForEdit(
 
   const { data, error } = await supabase
     .from("craftsman_profiles")
-    .select("profession, coverage_zip_codes, bio")
+    .select("profession, coverage_counties, coverage_zip_codes, bio")
     .eq("id", userId)
     .maybeSingle();
 
   if (error) {
     console.error("Fusizó profil lekérdezési hiba:", error.message);
-    return { professions: [], districts: [], bio: null };
+    return { professions: [], coverageAreas: [], bio: null };
   }
 
   return {
     professions: normalizeProfessions(data?.profession),
-    districts: normalizeDistricts(data?.coverage_zip_codes),
+    coverageAreas: normalizeCoverageAreas(
+      data?.coverage_counties,
+      data?.coverage_zip_codes,
+    ),
     bio: data?.bio?.trim() || null,
   };
 }

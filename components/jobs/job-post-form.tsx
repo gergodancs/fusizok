@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { createJob, type JobFormState } from "@/app/actions/jobs";
-import { BUDAPEST_DISTRICTS } from "@/lib/budapest-districts";
+import { PlacePicker } from "@/components/location/place-picker";
 import { COMPLETION_TIME_OPTIONS } from "@/lib/completion-time-options";
 import { JOB_CATEGORIES } from "@/lib/job-categories";
 import {
@@ -19,7 +19,8 @@ const initialState: JobFormState = {};
 const emptyDraft: JobFormDraft = {
   title: "",
   category: "",
-  zip_code: "",
+  county: "",
+  place: "",
   description: "",
   required_completion_time: "",
 };
@@ -130,57 +131,38 @@ export function JobPostForm() {
         />
       </div>
 
-      <div className="grid gap-6 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label htmlFor="category" className={labelClassName}>
-            Kategória
-          </label>
-          <select
-            id="category"
-            name="category"
-            required
-            value={draft.category}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, category: e.target.value }))
-            }
-            className={inputClassName}
-          >
-            <option value="" disabled>
-              Válassz kategóriát…
+      <div className="space-y-2">
+        <label htmlFor="category" className={labelClassName}>
+          Kategória
+        </label>
+        <select
+          id="category"
+          name="category"
+          required
+          value={draft.category}
+          onChange={(e) =>
+            setDraft((d) => ({ ...d, category: e.target.value }))
+          }
+          className={inputClassName}
+        >
+          <option value="" disabled>
+            Válassz kategóriát…
+          </option>
+          {JOB_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
             </option>
-            {JOB_CATEGORIES.map((category) => (
-              <option key={category} value={category}>
-                {category}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div className="space-y-2">
-          <label htmlFor="zip_code" className={labelClassName}>
-            Kerület
-          </label>
-          <select
-            id="zip_code"
-            name="zip_code"
-            required
-            value={draft.zip_code}
-            onChange={(e) =>
-              setDraft((d) => ({ ...d, zip_code: e.target.value }))
-            }
-            className={inputClassName}
-          >
-            <option value="" disabled>
-              Válassz kerületet…
-            </option>
-            {BUDAPEST_DISTRICTS.map((district) => (
-              <option key={district} value={district}>
-                {district}
-              </option>
-            ))}
-          </select>
-        </div>
+          ))}
+        </select>
       </div>
+
+      <PlacePicker
+        countyName={draft.county}
+        placeName={draft.place}
+        onChange={(county, place) =>
+          setDraft((d) => ({ ...d, county, place }))
+        }
+      />
 
       <div className="space-y-2">
         <label htmlFor="required_completion_time" className={labelClassName}>

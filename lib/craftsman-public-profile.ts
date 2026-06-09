@@ -1,6 +1,7 @@
-import { normalizeDistricts, normalizeProfessions } from "@/lib/craftsman";
+import { normalizeProfessions } from "@/lib/craftsman";
 import { getCraftsmanPortfolioImages } from "@/lib/portfolio";
 import { getCraftsmanReviewSummary } from "@/lib/reviews";
+import { normalizeCoverageAreas, type CoverageArea } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 import type { CraftsmanReviewSummary } from "@/lib/types/review";
 import type { PortfolioImage } from "@/lib/types/portfolio";
@@ -11,7 +12,7 @@ export type CraftsmanPublicProfile = {
   avatar_url: string | null;
   bio: string | null;
   professions: string[];
-  districts: string[];
+  coverageAreas: CoverageArea[];
   portfolioImages: PortfolioImage[];
   reviewSummary: CraftsmanReviewSummary;
 };
@@ -120,7 +121,7 @@ export async function getCraftsmanPublicProfile(
 
   const { data: craftsman, error: craftsmanError } = await supabase
     .from("craftsman_profiles")
-    .select("profession, coverage_zip_codes, bio")
+    .select("profession, coverage_counties, coverage_zip_codes, bio")
     .eq("id", craftsmanId)
     .maybeSingle();
 
@@ -140,7 +141,10 @@ export async function getCraftsmanPublicProfile(
     avatar_url: profile.avatar_url,
     bio: craftsman?.bio ?? null,
     professions: normalizeProfessions(craftsman?.profession),
-    districts: normalizeDistricts(craftsman?.coverage_zip_codes),
+    coverageAreas: normalizeCoverageAreas(
+      craftsman?.coverage_counties,
+      craftsman?.coverage_zip_codes,
+    ),
     portfolioImages,
     reviewSummary,
   };

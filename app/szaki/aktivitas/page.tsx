@@ -10,6 +10,7 @@ import {
   getBidActivityStatusLabel,
   getJobStatusLabel,
 } from "@/lib/status-labels";
+import { formatJobLocation } from "@/lib/places";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
@@ -24,7 +25,7 @@ function BidActivityCard({ bid }: { bid: BidWithJob }) {
         <div>
           <h3 className="font-bold text-zinc-100">{bid.job.title}</h3>
           <p className="mt-1 text-sm text-zinc-500">
-            {bid.job.category} · {bid.job.zip_code}
+            {bid.job.category} · {formatJobLocation(bid.job)}
           </p>
         </div>
         <span

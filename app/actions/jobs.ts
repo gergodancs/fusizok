@@ -1,11 +1,11 @@
 "use server";
 
-import { isBudapestDistrict } from "@/lib/budapest-districts";
 import {
   isRequiredCompletionTime,
 } from "@/lib/completion-time-options";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import type { JobFormDraft } from "@/lib/job-form-draft";
+import { isValidJobLocation } from "@/lib/places";
 import { uploadJobImages } from "@/lib/storage/upload-job-images";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,6 +21,7 @@ type JobInsert = {
   title: string;
   description: string;
   category: string;
+  county: string;
   zip_code: string;
   status: "open";
   required_completion_time: string;
@@ -33,7 +34,8 @@ export async function createJob(
 ): Promise<JobFormState> {
   const title = (formData.get("title") as string)?.trim();
   const category = formData.get("category") as string;
-  const district = (formData.get("zip_code") as string)?.trim();
+  const county = (formData.get("county") as string)?.trim();
+  const place = (formData.get("place") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const requiredCompletionTime = (
     formData.get("required_completion_time") as string
@@ -42,7 +44,8 @@ export async function createJob(
   const draft: JobFormDraft = {
     title: title ?? "",
     category: category ?? "",
-    zip_code: district ?? "",
+    county: county ?? "",
+    place: place ?? "",
     description: description ?? "",
     required_completion_time: requiredCompletionTime ?? "",
   };
@@ -55,8 +58,8 @@ export async function createJob(
     return { error: "Kérjük, válasszon szakma kategóriát.", draft };
   }
 
-  if (!district || !isBudapestDistrict(district)) {
-    return { error: "Kérjük, válasszon budapesti kerületet.", draft };
+  if (!county || !place || !isValidJobLocation(county, place)) {
+    return { error: "Kérjük, válasszon érvényes megyét és települést.", draft };
   }
 
   if (!description) {
@@ -105,7 +108,8 @@ export async function createJob(
     title,
     description,
     category,
-    zip_code: district,
+    county,
+    zip_code: place,
     status: "open",
     required_completion_time: requiredCompletionTime,
     image_urls: imageUrls,

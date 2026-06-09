@@ -7,6 +7,7 @@ import type {
   ClientBidPreview,
   CraftsmanPublicProfile,
 } from "@/lib/craftsman-public-profile";
+import { formatLocationLabel } from "@/lib/places";
 import { cardClassName } from "@/lib/ui-classes";
 
 type CraftsmanPublicProfileViewProps = {
@@ -67,9 +68,12 @@ export function CraftsmanPublicProfileView({
                 ))}
               </div>
             )}
-            {profile.districts.length > 0 && (
+            {profile.coverageAreas.length > 0 && (
               <p className="mt-3 text-sm text-zinc-500">
-                Kerületek: {profile.districts.join(", ")}
+                Területek:{" "}
+                {profile.coverageAreas
+                  .map((area) => formatLocationLabel(area.county, area.place))
+                  .join(", ")}
               </p>
             )}
           </div>

@@ -1,16 +1,17 @@
-import { BUDAPEST_DISTRICTS } from "@/lib/budapest-districts";
+import { CoverageAreaPicker } from "@/components/location/coverage-area-picker";
 import { JOB_CATEGORIES } from "@/lib/job-categories";
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
+import type { CoverageArea } from "@/lib/places";
 import { inputClassName, labelClassName } from "@/lib/ui-classes";
 
 type CraftsmanProfileFieldsProps = {
-  defaultDistricts?: string[];
+  defaultCoverageAreas?: CoverageArea[];
   defaultCategories?: string[];
   defaultBio?: string | null;
 };
 
 export function CraftsmanProfileFields({
-  defaultDistricts = [],
+  defaultCoverageAreas = [],
   defaultCategories = [],
   defaultBio = null,
 }: CraftsmanProfileFieldsProps) {
@@ -59,28 +60,7 @@ export function CraftsmanProfileFields({
         </div>
       </div>
 
-      <div className="space-y-2">
-        <span className={labelClassName}>
-          Mely budapesti kerületekben vállalsz munkát?
-        </span>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {BUDAPEST_DISTRICTS.map((district) => (
-            <label
-              key={district}
-              className="flex cursor-pointer items-center gap-2 rounded-lg border border-zinc-600 bg-zinc-800/80 px-3 py-2 text-sm text-zinc-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10"
-            >
-              <input
-                type="checkbox"
-                name="districts"
-                value={district}
-                defaultChecked={defaultDistricts.includes(district)}
-                className="accent-amber-500"
-              />
-              {district}
-            </label>
-          ))}
-        </div>
-      </div>
+      <CoverageAreaPicker defaultAreas={defaultCoverageAreas} />
     </>
   );
 }

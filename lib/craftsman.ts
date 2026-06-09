@@ -1,8 +1,12 @@
-import { isBudapestDistrict } from "@/lib/budapest-districts";
 import { createClient } from "@/lib/supabase/server";
 import type { CraftsmanProfile } from "@/lib/types/profile";
 import type { JobBidStats } from "@/lib/job-bid-stats";
 import { getJobBidStatsByJobIds } from "@/lib/job-bid-stats";
+import {
+  type CoverageArea,
+  jobMatchesCoverage,
+  normalizeCoverageAreas,
+} from "@/lib/places";
 import type { Job } from "@/lib/types/job";
 
 export type JobWithMarketStats = Job & JobBidStats;
@@ -26,18 +30,11 @@ export function normalizeProfessions(
   return [profession.trim()].filter(Boolean);
 }
 
-export function normalizeDistricts(
-  districts: string[] | null | undefined,
-): string[] {
-  if (!districts) return [];
-  return districts.map((d) => d.trim()).filter((d) => isBudapestDistrict(d));
-}
-
 export type MatchedJobsResult = {
   jobs: JobWithMarketStats[];
   craftsmanProfile: CraftsmanProfile | null;
   professions: string[];
-  districts: string[];
+  coverageAreas: CoverageArea[];
 };
 
 export async function getMatchedJobsForCraftsman(
@@ -47,7 +44,7 @@ export async function getMatchedJobsForCraftsman(
 
   const { data: craftsmanProfile, error: profileError } = await supabase
     .from("craftsman_profiles")
-    .select("id, profession, coverage_zip_codes")
+    .select("id, profession, coverage_counties, coverage_zip_codes")
     .eq("id", userId)
     .maybeSingle();
 
@@ -57,30 +54,32 @@ export async function getMatchedJobsForCraftsman(
       jobs: [],
       craftsmanProfile: null,
       professions: [],
-      districts: [],
+      coverageAreas: [],
     };
   }
 
   const professions = normalizeProfessions(craftsmanProfile?.profession);
-  const districts = normalizeDistricts(craftsmanProfile?.coverage_zip_codes);
+  const coverageAreas = normalizeCoverageAreas(
+    craftsmanProfile?.coverage_counties,
+    craftsmanProfile?.coverage_zip_codes,
+  );
 
-  if (!craftsmanProfile || professions.length === 0 || districts.length === 0) {
+  if (!craftsmanProfile || professions.length === 0 || coverageAreas.length === 0) {
     return {
       jobs: [],
       craftsmanProfile: (craftsmanProfile as CraftsmanProfile) ?? null,
       professions,
-      districts,
+      coverageAreas,
     };
   }
 
   const { data, error: jobsError } = await supabase
     .from("jobs")
     .select(
-      "id, client_id, title, description, category, zip_code, status, required_completion_time, image_urls, created_at",
+      "id, client_id, title, description, category, county, zip_code, status, required_completion_time, image_urls, created_at",
     )
     .eq("status", "open")
     .in("category", professions)
-    .in("zip_code", districts)
     .order("created_at", { ascending: false });
 
   if (jobsError) {
@@ -89,7 +88,7 @@ export async function getMatchedJobsForCraftsman(
       jobs: [],
       craftsmanProfile: craftsmanProfile as CraftsmanProfile,
       professions,
-      districts,
+      coverageAreas,
     };
   }
 
@@ -105,7 +104,8 @@ export async function getMatchedJobsForCraftsman(
   const bidJobIds = new Set((existingBids ?? []).map((b) => b.job_id));
 
   const matchedJobs = ((data ?? []) as Job[]).filter(
-    (job) => !bidJobIds.has(job.id),
+    (job) =>
+      !bidJobIds.has(job.id) && jobMatchesCoverage(job, coverageAreas),
   );
 
   const statsByJobId = await getJobBidStatsByJobIds(
@@ -129,7 +129,7 @@ export async function getMatchedJobsForCraftsman(
     jobs,
     craftsmanProfile: craftsmanProfile as CraftsmanProfile,
     professions,
-    districts,
+    coverageAreas,
   };
 }
 

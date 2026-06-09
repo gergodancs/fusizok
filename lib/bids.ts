@@ -8,6 +8,7 @@ export type BidWithJob = JobBid & {
     title: string;
     status: JobStatus;
     category: string;
+    county?: string | null;
     zip_code: string;
     client_id: string;
   };
@@ -68,6 +69,7 @@ export async function getCraftsmanActivity(
         title,
         status,
         category,
+        county,
         zip_code,
         client_id
       )

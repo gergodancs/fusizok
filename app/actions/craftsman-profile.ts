@@ -1,7 +1,7 @@
 "use server";
 
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
-import { isBudapestDistrict } from "@/lib/budapest-districts";
+import { normalizeCoverageAreas } from "@/lib/places";
 import { revalidatePath } from "next/cache";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import { getSessionUser } from "@/lib/auth/session";
@@ -27,17 +27,24 @@ export async function updateCraftsmanProfile(
     .map((v) => (v as string).trim())
     .filter((v) => JOB_CATEGORIES.includes(v as JobCategory));
 
-  const selectedDistricts = formData
-    .getAll("districts")
+  const counties = formData
+    .getAll("coverage_counties")
     .map((v) => (v as string).trim())
-    .filter((v) => isBudapestDistrict(v));
+    .filter(Boolean);
+
+  const places = formData
+    .getAll("coverage_places")
+    .map((v) => (v as string).trim())
+    .filter(Boolean);
+
+  const coverageAreas = normalizeCoverageAreas(counties, places);
 
   if (selectedCategories.length === 0) {
     return { error: "Válassz legalább egy kategóriát." };
   }
 
-  if (selectedDistricts.length === 0) {
-    return { error: "Válassz legalább egy kerületet." };
+  if (coverageAreas.length === 0) {
+    return { error: "Adj meg legalább egy települést, ahol vállalsz munkát." };
   }
 
   const bioRaw = (formData.get("bio") as string) ?? "";
@@ -55,7 +62,8 @@ export async function updateCraftsmanProfile(
     {
       id: user.id,
       profession: selectedCategories.join(", "),
-      coverage_zip_codes: selectedDistricts,
+      coverage_counties: coverageAreas.map((area) => area.county),
+      coverage_zip_codes: coverageAreas.map((area) => area.place),
       bio,
     },
     { onConflict: "id" },

@@ -10,7 +10,9 @@ export type Profile = {
 export type CraftsmanProfile = {
   id: string;
   profession: string | string[] | null;
-  /** Budapesti kerületek nevei, pl. ["1. kerület", "11. kerület"] */
+  /** Lefedett megyék – coverage_zip_codes-szal párosítva */
+  coverage_counties: string[];
+  /** Lefedett települések/kerületek (DB: coverage_zip_codes) */
   coverage_zip_codes: string[];
   free_credits: number;
   bio: string | null;
@@ -18,7 +20,7 @@ export type CraftsmanProfile = {
 
 export type CraftsmanProfileUpdate = {
   profession?: string | string[] | null;
-  /** Budapesti kerületek nevei */
+  coverage_counties?: string[];
   coverage_zip_codes?: string[];
   bio?: string | null;
 };

@@ -39,6 +39,7 @@ export async function syncUserProfile(user: User): Promise<void> {
       .upsert(
         {
           id: user.id,
+          coverage_counties: [],
           coverage_zip_codes: [],
         },
         { onConflict: "id", ignoreDuplicates: true },

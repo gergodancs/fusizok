@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 export default async function SzakiProfilPage() {
   const { user } = await requireCraftsman("/szaki/profil");
-  const [profile, { professions, districts, bio }, portfolioImages, reviewSummary] =
+  const [profile, { professions, coverageAreas, bio }, portfolioImages, reviewSummary] =
     await Promise.all([
       getUserProfile(user.id),
       getCraftsmanProfileForEdit(user.id),
@@ -49,7 +49,7 @@ export default async function SzakiProfilPage() {
           <div className={`${cardClassName} p-6 sm:p-8`}>
             <CraftsmanProfileSettings
               defaultCategories={professions}
-              defaultDistricts={districts}
+              defaultCoverageAreas={coverageAreas}
               defaultBio={bio}
               portfolioImages={portfolioImages}
             />

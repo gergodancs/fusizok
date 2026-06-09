@@ -2,6 +2,7 @@ import Link from "next/link";
 import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import type { JobWithMarketStats } from "@/lib/craftsman";
 import { JOB_STATUS_LABELS } from "@/lib/status-labels";
+import { formatJobLocation } from "@/lib/places";
 import type { Job } from "@/lib/types/job";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
@@ -47,7 +48,7 @@ export function JobCard({ job }: JobCardProps) {
             {job.category}
           </span>
           <span className="inline-flex items-center rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
-            Kerület: {job.zip_code}
+            {formatJobLocation(job)}
           </span>
           {imageCount > 0 && (
             <span className="inline-flex items-center rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">

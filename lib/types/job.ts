@@ -6,7 +6,9 @@ export type Job = {
   title: string;
   description: string;
   category: string;
-  /** Budapesti kerület neve, pl. "11. kerület" */
+  /** Megye neve */
+  county?: string | null;
+  /** Település vagy kerület neve (DB oszlop: zip_code) */
   zip_code: string;
   status: JobStatus;
   required_completion_time?: string | null;

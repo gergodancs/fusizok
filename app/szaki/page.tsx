@@ -6,6 +6,7 @@ import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getMatchedJobsForCraftsman } from "@/lib/craftsman";
 import { getCraftsmanProfileForEdit } from "@/lib/craftsman-profile";
 import { markOpenJobsSeen } from "@/lib/notifications";
+import { formatLocationLabel } from "@/lib/places";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
@@ -17,9 +18,9 @@ export const dynamic = "force-dynamic";
 
 export default async function SzakiPage() {
   const { user } = await requireCraftsman("/szaki");
-  const { professions, districts } = await getCraftsmanProfileForEdit(user.id);
+  const { professions, coverageAreas } = await getCraftsmanProfileForEdit(user.id);
 
-  if (professions.length === 0 || districts.length === 0) {
+  if (professions.length === 0 || coverageAreas.length === 0) {
     redirect("/szaki/profil");
   }
 
@@ -36,7 +37,7 @@ export default async function SzakiPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-zinc-400">
             Csak azokat a nyitott melókat látod, amelyek illeszkednek a
-            profilodban megadott kategóriákhoz és kerületekhez, és amelyekre
+            profilodban megadott kategóriákhoz és területekhez, és amelyekre
             még nem pályáztál.
           </p>
 
@@ -49,12 +50,12 @@ export default async function SzakiPage() {
                 {profession}
               </span>
             ))}
-            {districts.map((district) => (
+            {coverageAreas.map((area) => (
               <span
-                key={district}
+                key={`${area.county}|${area.place}`}
                 className="rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400"
               >
-                {district}
+                {formatLocationLabel(area.county, area.place)}
               </span>
             ))}
           </div>
@@ -66,7 +67,7 @@ export default async function SzakiPage() {
               Nincs illeszkedő munka
             </p>
             <p className="mt-2 text-sm text-zinc-500">
-              Jelenleg nincs olyan nyitott meló a kiválasztott kerületeidben,
+              Jelenleg nincs olyan nyitott meló a kiválasztott területeiden,
               ami passzol a profilodhoz. Nézz vissza később!
             </p>
           </div>

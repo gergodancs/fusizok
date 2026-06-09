@@ -7,6 +7,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getJobBidStats } from "@/lib/job-bid-stats";
+import { formatJobLocation } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -26,7 +27,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, title, description, category, zip_code, status, required_completion_time, image_urls, created_at",
+      "id, title, description, category, county, zip_code, status, required_completion_time, image_urls, created_at",
     )
     .eq("id", jobId)
     .eq("status", "open")
@@ -53,7 +54,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
           <p className={pageEyebrowClassName}>Munka részletei</p>
           <h1 className="mt-2 text-3xl font-black text-zinc-50">{job.title}</h1>
           <p className="mt-2 text-sm text-zinc-500">
-            {job.category} · Kerület: {job.zip_code}
+            {job.category} · {formatJobLocation(job)}
             {job.required_completion_time && (
               <> · Határidő: {job.required_completion_time}</>
             )}
