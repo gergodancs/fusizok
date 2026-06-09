@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
-import { CraftsmanProfileForm } from "@/components/craftsman/craftsman-profile-form";
-import { PortfolioManager } from "@/components/craftsman/portfolio-manager";
+import { CraftsmanProfileSettings } from "@/components/craftsman/craftsman-profile-settings";
 import { CraftsmanReviewsSection } from "@/components/reviews/craftsman-reviews-section";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
@@ -48,16 +47,12 @@ export default async function SzakiProfilPage() {
           </div>
 
           <div className={`${cardClassName} p-6 sm:p-8`}>
-            <CraftsmanProfileForm
+            <CraftsmanProfileSettings
               defaultCategories={professions}
               defaultDistricts={districts}
               defaultBio={bio}
-              showSuccessBanner
+              portfolioImages={portfolioImages}
             />
-          </div>
-
-          <div className={`${cardClassName} p-6 sm:p-8`}>
-            <PortfolioManager images={portfolioImages} />
           </div>
 
           <div className={`${cardClassName} p-6 sm:p-8`}>

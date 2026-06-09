@@ -6,6 +6,10 @@ import {
   getStripeContactUnlockPriceHuf,
   isStripeConfigured,
 } from "@/lib/stripe/config";
+import {
+  STRIPE_HUF_MIN_FORINTS,
+  validateStripeContactUnlockPrice,
+} from "@/lib/stripe/huf-amount";
 import { getStripeServerClient } from "@/lib/stripe/server";
 import type { CreateCheckoutSessionResult } from "@/lib/types/payments";
 import { createClient } from "@/lib/supabase/server";
@@ -59,6 +63,15 @@ export async function createCraftsmanChatCheckoutSession(
 
   const appUrl = getAppBaseUrl();
   const priceHuf = getStripeContactUnlockPriceHuf();
+  const priceValidation = validateStripeContactUnlockPrice(priceHuf);
+
+  if (!priceValidation.ok) {
+    console.error("[createCraftsmanChatCheckoutSession] Érvénytelen ár:", {
+      priceHuf,
+      env: process.env.STRIPE_CONTACT_UNLOCK_PRICE_HUF,
+    });
+    return { ok: false, error: priceValidation.error };
+  }
 
   try {
     const stripe = getStripeServerClient();
@@ -71,7 +84,7 @@ export async function createCraftsmanChatCheckoutSession(
           {
             price_data: {
               currency: "huf",
-              unit_amount: priceHuf,
+              unit_amount: priceValidation.unitAmount,
               product_data: {
                 name: "Chat válaszadás",
                 description: `${job.title} – válasz jogosultság`,
@@ -105,6 +118,8 @@ export async function createCraftsmanChatCheckoutSession(
       bidId,
       conversationId,
       craftsmanId: user.id,
+      priceHuf,
+      stripeUnitAmount: priceValidation.unitAmount,
     });
 
     return {
@@ -114,6 +129,15 @@ export async function createCraftsmanChatCheckoutSession(
     };
   } catch (err) {
     console.error("[createCraftsmanChatCheckoutSession] Stripe hiba:", err);
+
+    const stripeErr = err as { code?: string };
+    if (stripeErr.code === "amount_too_small") {
+      return {
+        ok: false,
+        error: `A fizetési összeg túl alacsony (minimum ${STRIPE_HUF_MIN_FORINTS} Ft). Ellenőrizd a STRIPE_CONTACT_UNLOCK_PRICE_HUF beállítást (ajánlott: 990).`,
+      };
+    }
+
     return { ok: false, error: "A fizetés indítása sikertelen. Próbáld újra." };
   }
 }

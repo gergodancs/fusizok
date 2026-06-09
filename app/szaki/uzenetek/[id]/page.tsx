@@ -9,6 +9,7 @@ import {
   getConversationHeader,
   getConversationMessages,
 } from "@/lib/conversations";
+import { getStripeContactUnlockPriceHuf } from "@/lib/stripe/config";
 import { getJobStatusLabel } from "@/lib/status-labels";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -59,6 +60,7 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
             bidId={bidId}
             conversationId={id}
             jobTitle={header.jobTitle}
+            priceHuf={getStripeContactUnlockPriceHuf()}
           />
         )}
 

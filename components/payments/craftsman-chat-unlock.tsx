@@ -13,6 +13,7 @@ type CraftsmanChatUnlockProps = {
   bidId: string;
   conversationId: string;
   jobTitle: string;
+  priceHuf: number;
 };
 
 function Spinner() {
@@ -28,6 +29,7 @@ export function CraftsmanChatUnlock({
   bidId,
   conversationId,
   jobTitle,
+  priceHuf,
 }: CraftsmanChatUnlockProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -100,7 +102,7 @@ export function CraftsmanChatUnlock({
               Fizetés indítása…
             </>
           ) : (
-            "Válaszadás aktiválása (fizetés)"
+            `Válaszadás aktiválása (${priceHuf.toLocaleString("hu-HU")} Ft)`
           )}
         </button>
         {error && (

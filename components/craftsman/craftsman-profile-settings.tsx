@@ -7,23 +7,26 @@ import {
   type CraftsmanProfileFormState,
 } from "@/app/actions/craftsman-profile";
 import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile-fields";
+import { PortfolioManager } from "@/components/craftsman/portfolio-manager";
+import type { PortfolioImage } from "@/lib/types/portfolio";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
+const FORM_ID = "craftsman-profile-save-form";
 const initialState: CraftsmanProfileFormState = {};
 
-type CraftsmanProfileFormProps = {
+type CraftsmanProfileSettingsProps = {
   defaultDistricts?: string[];
   defaultCategories?: string[];
   defaultBio?: string | null;
-  redirectOnSuccess?: string;
+  portfolioImages: PortfolioImage[];
 };
 
-export function CraftsmanProfileForm({
+export function CraftsmanProfileSettings({
   defaultDistricts = [],
   defaultCategories = [],
   defaultBio = null,
-  redirectOnSuccess = "/szaki",
-}: CraftsmanProfileFormProps) {
+  portfolioImages,
+}: CraftsmanProfileSettingsProps) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(
     updateCraftsmanProfile,
@@ -32,16 +35,28 @@ export function CraftsmanProfileForm({
 
   useEffect(() => {
     if (state.success) {
-      if (redirectOnSuccess) {
-        router.push(redirectOnSuccess);
-      } else {
-        router.refresh();
-      }
+      router.push("/szaki");
     }
-  }, [state.success, redirectOnSuccess, router]);
+  }, [state.success, router]);
 
   return (
-    <form action={formAction} className="mt-6 space-y-5 text-left">
+    <div className="space-y-8">
+      <form
+        id={FORM_ID}
+        action={formAction}
+        className="space-y-5 text-left"
+      >
+        <CraftsmanProfileFields
+          defaultCategories={defaultCategories}
+          defaultDistricts={defaultDistricts}
+          defaultBio={defaultBio}
+        />
+      </form>
+
+      <div className="border-t border-zinc-700 pt-8">
+        <PortfolioManager images={portfolioImages} />
+      </div>
+
       {state.error && (
         <div
           role="alert"
@@ -51,19 +66,14 @@ export function CraftsmanProfileForm({
         </div>
       )}
 
-      <CraftsmanProfileFields
-        defaultCategories={defaultCategories}
-        defaultDistricts={defaultDistricts}
-        defaultBio={defaultBio}
-      />
-
       <button
         type="submit"
+        form={FORM_ID}
         disabled={isPending}
         className={`w-full ${btnPrimaryClassName}`}
       >
         {isPending ? "Mentés…" : "Profil mentése"}
       </button>
-    </form>
+    </div>
   );
 }

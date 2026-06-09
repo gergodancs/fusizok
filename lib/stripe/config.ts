@@ -1,7 +1,12 @@
+import { parsePriceHufFromEnv } from "@/lib/stripe/huf-amount";
+
+const DEFAULT_CONTACT_UNLOCK_PRICE_HUF = 990;
+
 export function getStripeContactUnlockPriceHuf(): number {
-  const raw = process.env.STRIPE_CONTACT_UNLOCK_PRICE_HUF;
-  const parsed = raw ? Number.parseInt(raw, 10) : 990;
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 990;
+  return parsePriceHufFromEnv(
+    process.env.STRIPE_CONTACT_UNLOCK_PRICE_HUF,
+    DEFAULT_CONTACT_UNLOCK_PRICE_HUF,
+  );
 }
 
 export function getAppBaseUrl(): string {
