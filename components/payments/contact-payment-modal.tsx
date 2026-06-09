@@ -17,7 +17,11 @@ type ContactPaymentModalProps = {
   craftsmanName: string;
   clientSecret: string;
   onClose: () => void;
-  onSuccess: (conversationId: string) => void;
+  onSuccess: () => void;
+  title?: string;
+  description?: string;
+  submitLabel?: string;
+  pollUnlock?: () => Promise<boolean>;
 };
 
 const stripePromise = loadStripe(
@@ -33,18 +37,21 @@ function Spinner() {
   );
 }
 
-async function waitForActivation(
+async function waitForUnlock(
   bidId: string,
+  pollUnlock?: () => Promise<boolean>,
   maxAttempts = 15,
-): Promise<string | null> {
+): Promise<boolean> {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
-    const result = await pollContactActivation(bidId);
-    if (result.ok && result.contactShared) {
-      return result.conversationId;
+    if (pollUnlock) {
+      if (await pollUnlock()) return true;
+    } else {
+      const result = await pollContactActivation(bidId);
+      if (result.ok && result.contactShared) return true;
     }
     await new Promise((resolve) => setTimeout(resolve, 1500));
   }
-  return null;
+  return false;
 }
 
 export function ContactPaymentModal({
@@ -54,6 +61,10 @@ export function ContactPaymentModal({
   clientSecret,
   onClose,
   onSuccess,
+  title = "Kapcsolat megosztása",
+  description = "Apple Pay, Google Pay és bankkártya is használható.",
+  submitLabel = "Fizetés és chat indítása",
+  pollUnlock,
 }: ContactPaymentModalProps) {
   const paymentElementRef = useRef<HTMLDivElement>(null);
   const checkoutSdkRef = useRef<StripeCheckoutElementsSdk | null>(null);
@@ -160,23 +171,23 @@ export function ContactPaymentModal({
           return;
         }
 
-        const conversationId = await waitForActivation(bidId);
-        if (!conversationId) {
+        const unlocked = await waitForUnlock(bidId, pollUnlock);
+        if (!unlocked) {
           setError(
-            "A fizetés sikeres, de a chat aktiválása még folyamatban. Frissítsd az oldalt pár másodperc múlva.",
+            "A fizetés sikeres, de az aktiválás még folyamatban. Frissítsd az oldalt pár másodperc múlva.",
           );
           setPaying(false);
           return;
         }
 
-        onSuccess(conversationId);
+        onSuccess();
       } catch (err) {
         console.error("[ContactPaymentModal] confirm hiba:", err);
         setError("Váratlan hiba történt a fizetés során.");
         setPaying(false);
       }
     },
-    [bidId, loading, onSuccess, paying],
+    [bidId, loading, onSuccess, paying, pollUnlock],
   );
 
   return (
@@ -193,16 +204,12 @@ export function ContactPaymentModal({
               id="payment-modal-title"
               className="text-lg font-bold text-zinc-100"
             >
-              Kapcsolat megosztása
+              {title}
             </h2>
             <p className="mt-1 text-sm text-zinc-400">
               {jobTitle} – {craftsmanName}
             </p>
-            <p className="mt-2 text-xs text-zinc-500">
-              A szaki ingyenes kreditjei elfogytak. A chat megnyitásához egyszeri
-              díj szükséges. Apple Pay, Google Pay és bankkártya is
-              használható.
-            </p>
+            <p className="mt-2 text-xs text-zinc-500">{description}</p>
           </div>
           <button
             type="button"
@@ -245,7 +252,7 @@ export function ContactPaymentModal({
                 Fizetés feldolgozása…
               </>
             ) : (
-              "Fizetés és chat indítása"
+              submitLabel
             )}
           </button>
         </form>

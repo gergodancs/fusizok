@@ -2,16 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
-import { createContactCheckoutSession } from "@/app/actions/create-contact-checkout";
 import { initiateShareContact } from "@/app/actions/share-contact";
-import { ContactPaymentModal } from "@/components/payments/contact-payment-modal";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
 type ShareContactButtonProps = {
   bidId: string;
-  jobTitle: string;
-  craftsmanName: string;
-  variant?: "primary" | "resume";
 };
 
 function Spinner() {
@@ -23,21 +18,13 @@ function Spinner() {
   );
 }
 
-export function ShareContactButton({
-  bidId,
-  jobTitle,
-  craftsmanName,
-  variant = "primary",
-}: ShareContactButtonProps) {
+export function ShareContactButton({ bidId }: ShareContactButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [paymentModal, setPaymentModal] = useState<{
-    clientSecret: string;
-  } | null>(null);
 
   const handleShare = useCallback(async () => {
-    if (loading || paymentModal) return;
+    if (loading) return;
 
     setLoading(true);
     setError(null);
@@ -51,76 +38,42 @@ export function ShareContactButton({
         return;
       }
 
-      if (
-        result.outcome === "activated" ||
-        result.outcome === "already_active"
-      ) {
+      if (result.conversationId) {
         router.push(`/lakos/uzenetek/${result.conversationId}`);
         return;
       }
 
-      const checkout = await createContactCheckoutSession(bidId);
-      if (!checkout.ok) {
-        setError(checkout.error);
-        setLoading(false);
-        return;
-      }
-
-      setPaymentModal({ clientSecret: checkout.clientSecret });
+      setError("A chat indítása sikertelen.");
       setLoading(false);
     } catch (err) {
       console.error("[ShareContactButton] hiba:", err);
       setError("Váratlan hiba történt. Próbáld újra.");
       setLoading(false);
     }
-  }, [bidId, loading, paymentModal, router]);
-
-  const handlePaymentSuccess = useCallback(
-    (conversationId: string) => {
-      setPaymentModal(null);
-      router.push(`/lakos/uzenetek/${conversationId}`);
-    },
-    [router],
-  );
-
-  const label =
-    variant === "resume" ? "Fizetés befejezése" : "Kapcsolat megosztása";
+  }, [bidId, loading, router]);
 
   return (
-    <>
-      <div className="flex-1 space-y-2">
-        <button
-          type="button"
-          onClick={handleShare}
-          disabled={loading || Boolean(paymentModal)}
-          className={`flex w-full items-center justify-center gap-2 ${btnPrimaryClassName}`}
-        >
-          {loading ? (
-            <>
-              <Spinner />
-              Feldolgozás…
-            </>
-          ) : (
-            label
-          )}
-        </button>
-        {error && (
-          <p className="text-sm text-red-400" role="alert">
-            {error}
-          </p>
+    <div className="flex-1 space-y-2">
+      <button
+        type="button"
+        onClick={handleShare}
+        disabled={loading}
+        className={`flex w-full items-center justify-center gap-2 ${btnPrimaryClassName}`}
+      >
+        {loading ? (
+          <>
+            <Spinner />
+            Feldolgozás…
+          </>
+        ) : (
+          "Kapcsolat megosztása"
         )}
-      </div>
-
-      {paymentModal && (
-        <ContactPaymentModal
-          bidId={bidId}
-          jobTitle={jobTitle}
-          craftsmanName={craftsmanName}
-          clientSecret={paymentModal.clientSecret}
-          onClose={() => setPaymentModal(null)}
-          onSuccess={handlePaymentSuccess}
-        />
+      </button>
+      {error && (
+        <p className="text-sm text-red-400" role="alert">
+          {error}
+        </p>
       )}
-    </>
+    </div>
   );
 }

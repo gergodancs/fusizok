@@ -1,23 +1,16 @@
 export type ShareContactOutcome =
   | "activated"
-  | "needs_payment"
+  | "craftsman_payment_required"
   | "already_active";
 
 export type ShareContactResult =
   | {
       ok: true;
-      outcome: "activated" | "already_active";
+      outcome: ShareContactOutcome;
       conversationId: string;
       craftsmanId: string;
       jobId: string;
       usedCredit?: boolean;
-    }
-  | {
-      ok: true;
-      outcome: "needs_payment";
-      bidId: string;
-      jobId: string;
-      craftsmanId: string;
     }
   | {
       ok: false;

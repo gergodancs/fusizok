@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { notifyUser } from "@/app/utils/notifications";
-import { canUserAccessConversation } from "@/lib/chat-access";
+import {
+  canCraftsmanSendInConversation,
+  canUserAccessConversation,
+} from "@/lib/chat-access";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,6 +47,19 @@ export async function sendMessage(
       error:
         "A chat csak akkor érhető el, ha a megrendelő megosztotta a kapcsolatot.",
     };
+  }
+
+  if (conversation.craftsman_id === user.id) {
+    const canSend = await canCraftsmanSendInConversation(
+      conversation.job_id,
+      conversation.craftsman_id,
+    );
+    if (!canSend) {
+      return {
+        error:
+          "A válaszadáshoz előbb fizesd ki a chat kapcsolatfelvételi díjat.",
+      };
+    }
   }
 
   const { error } = await supabase.from("messages").insert({

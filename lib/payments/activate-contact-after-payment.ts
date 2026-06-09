@@ -75,11 +75,17 @@ export async function activateContactAfterPayment(params: {
     result.craftsman_id
   ) {
     const appUrl = getAppBaseUrl();
+    const isCraftsmanUnlock =
+      params.metadata.payment_type === "craftsman_chat_unlock";
     try {
       const notifyResult = await notifyUser({
         userId: result.craftsman_id,
-        title: "Ajánlat elfogadva!",
-        body: `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`,
+        title: isCraftsmanUnlock
+          ? "Chat válaszadás aktiválva"
+          : "Ajánlat elfogadva!",
+        body: isCraftsmanUnlock
+          ? `Sikeres fizetés – most már válaszolhatsz a(z) „${params.jobTitle}” munkához tartozó chatben.`
+          : `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`,
         url: `${appUrl}/szaki/uzenetek/${result.conversation_id}`,
         emailSubject: `Ajánlat elfogadva – ${params.jobTitle}`,
         emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${params.clientName} elfogadta az ajánlatodat a(z) <strong>${params.jobTitle}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${result.conversation_id}">Chat megnyitása</a></p>`,

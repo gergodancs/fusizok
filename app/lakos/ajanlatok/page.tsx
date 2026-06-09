@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Suspense } from "react";
 import { OfferCard } from "@/components/client/offer-card";
 import { PageContainer } from "@/components/layout/page-container";
-import { PaymentReturnHandler } from "@/components/payments/payment-return-handler";
 import { getAuthContext } from "@/lib/auth/session";
 import { getClientJobOffers } from "@/lib/client-bids";
 import { markClientOffersViewed } from "@/lib/notifications";
@@ -34,9 +32,6 @@ export default async function LakosAjanlatokPage() {
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
       <PageContainer narrow>
-        <Suspense fallback={null}>
-          <PaymentReturnHandler />
-        </Suspense>
         <div className="mb-8">
           <p className={pageEyebrowClassName}>Ajánlatok</p>
           <h1 className="mt-2 text-3xl font-black text-zinc-50">

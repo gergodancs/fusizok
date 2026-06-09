@@ -33,7 +33,7 @@ function categorizeBids(bids: BidWithJob[]): CraftsmanActivity {
       bid.contact_shared
     ) {
       accepted.push(bid);
-    } else if (bid.status === "pending" || bid.status === "pending_payment") {
+    } else if (bid.status === "pending") {
       if (bid.job.status === "open" || bid.job.status === "assigned") {
         pending.push(bid);
       } else {

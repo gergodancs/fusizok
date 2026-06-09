@@ -1,20 +1,55 @@
 import { createClient } from "@/lib/supabase/server";
 
-export async function isContactSharedForConversation(
+export type BidChatAccess = {
+  contact_shared: boolean;
+  status: string;
+};
+
+export async function getBidChatAccess(
   jobId: string,
   craftsmanId: string,
-): Promise<boolean> {
+): Promise<BidChatAccess | null> {
   const supabase = await createClient();
 
   const { data } = await supabase
     .from("job_bids")
-    .select("contact_shared")
+    .select("contact_shared, status")
     .eq("job_id", jobId)
     .eq("craftsman_id", craftsmanId)
-    .eq("contact_shared", true)
     .maybeSingle();
 
-  return Boolean(data);
+  if (!data) return null;
+
+  return {
+    contact_shared: Boolean(data.contact_shared),
+    status: data.status,
+  };
+}
+
+export async function isContactSharedForConversation(
+  jobId: string,
+  craftsmanId: string,
+): Promise<boolean> {
+  const bid = await getBidChatAccess(jobId, craftsmanId);
+  return Boolean(bid?.contact_shared);
+}
+
+/** Fusizó olvashatja a chatet, ha megosztották a kontaktot. */
+export async function canCraftsmanReadConversation(
+  jobId: string,
+  craftsmanId: string,
+): Promise<boolean> {
+  return isContactSharedForConversation(jobId, craftsmanId);
+}
+
+/** Fusizó csak active státuszú (fizetett / ingyenes kredit) ajánlatnál küldhet üzenetet. */
+export async function canCraftsmanSendInConversation(
+  jobId: string,
+  craftsmanId: string,
+): Promise<boolean> {
+  const bid = await getBidChatAccess(jobId, craftsmanId);
+  if (!bid?.contact_shared) return false;
+  return bid.status === "active";
 }
 
 export async function canUserAccessConversation(
@@ -31,7 +66,7 @@ export async function canUserAccessConversation(
   }
 
   if (conversation.craftsman_id === userId) {
-    return isContactSharedForConversation(
+    return canCraftsmanReadConversation(
       conversation.job_id,
       conversation.craftsman_id,
     );

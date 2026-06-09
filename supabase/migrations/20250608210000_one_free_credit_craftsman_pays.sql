@@ -1,66 +1,16 @@
--- Stripe fizetés + ingyenes kreditek a chat kapcsolatfelvételekhez
-
--- =============================================================================
--- 1. craftsman_profiles – ingyenes kreditek
--- =============================================================================
+-- Teszt: 1 ingyenes kapcsolatfelvétel / fusizó.
+-- 2. esetben: chat létrejön, de a fusizó csak fizetés után válaszolhat.
 
 ALTER TABLE public.craftsman_profiles
-  ADD COLUMN IF NOT EXISTS free_credits INTEGER NOT NULL DEFAULT 1;
+  ALTER COLUMN free_credits SET DEFAULT 1;
 
 COMMENT ON COLUMN public.craftsman_profiles.free_credits IS
   'Ingyenes chat-válasz jogosultságok száma. 0-nál a fusizó fizetés után válaszolhat.';
 
+-- Teszteléshez: minden fusizó 1 kredit (ne legyen 7)
 UPDATE public.craftsman_profiles
 SET free_credits = 1
-WHERE free_credits IS NULL;
-
--- =============================================================================
--- 2. job_bids – bővített státuszok
--- =============================================================================
-
-ALTER TABLE public.job_bids
-  DROP CONSTRAINT IF EXISTS job_bids_status_check;
-
-ALTER TABLE public.job_bids
-  ADD CONSTRAINT job_bids_status_check
-  CHECK (status IN (
-    'pending',
-    'accepted',
-    'rejected',
-    'active',
-    'pending_payment'
-  ));
-
--- Korábbi elfogadott ajánlatok → active
-UPDATE public.job_bids
-SET status = 'active'
-WHERE status = 'accepted' AND contact_shared = true;
-
--- =============================================================================
--- 3. stripe_idempotency_keys – duplikált webhook események ellen
--- =============================================================================
-
-CREATE TABLE IF NOT EXISTS public.stripe_idempotency_keys (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  idempotency_key TEXT NOT NULL UNIQUE,
-  status TEXT NOT NULL DEFAULT 'processing'
-    CHECK (status IN ('processing', 'completed', 'skipped_stale_job', 'failed')),
-  bid_id UUID REFERENCES public.job_bids (id) ON DELETE SET NULL,
-  metadata JSONB,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-  completed_at TIMESTAMPTZ
-);
-
-CREATE INDEX IF NOT EXISTS stripe_idempotency_keys_bid_id_idx
-  ON public.stripe_idempotency_keys (bid_id);
-
-ALTER TABLE public.stripe_idempotency_keys ENABLE ROW LEVEL SECURITY;
-
--- Csak service role (admin kliens) fér hozzá – nincs authenticated policy
-
--- =============================================================================
--- 4. RPC: atomi kapcsolatmegosztás ingyenes kredittel
--- =============================================================================
+WHERE free_credits > 1;
 
 CREATE OR REPLACE FUNCTION public.share_contact_with_credit(
   p_bid_id UUID,
@@ -78,6 +28,7 @@ DECLARE
   v_credits INTEGER;
   v_conversation_id UUID;
   v_now TIMESTAMPTZ := now();
+  v_needs_craftsman_payment BOOLEAN := false;
 BEGIN
   IF p_bid_id IS NULL OR p_client_id IS NULL THEN
     RETURN jsonb_build_object('success', false, 'error', 'invalid_input');
@@ -124,17 +75,8 @@ BEGIN
       'outcome', 'already_active',
       'conversation_id', v_conversation_id,
       'job_id', v_bid.job_id,
-      'craftsman_id', v_bid.craftsman_id
-    );
-  END IF;
-
-  IF v_bid.status = 'pending_payment' THEN
-    RETURN jsonb_build_object(
-      'success', true,
-      'outcome', 'needs_payment',
-      'bid_id', v_bid.id,
-      'job_id', v_bid.job_id,
-      'craftsman_id', v_bid.craftsman_id
+      'craftsman_id', v_bid.craftsman_id,
+      'craftsman_payment_required', v_bid.status = 'pending_payment'
     );
   END IF;
 
@@ -158,53 +100,57 @@ BEGIN
       contact_shared_at = v_now,
       status = 'active'
     WHERE id = p_bid_id;
+  ELSE
+    v_needs_craftsman_payment := true;
 
-    INSERT INTO public.conversations (job_id, client_id, craftsman_id)
-    VALUES (v_bid.job_id, v_job.client_id, v_bid.craftsman_id)
-    ON CONFLICT (job_id, craftsman_id) DO NOTHING
-    RETURNING id INTO v_conversation_id;
+    UPDATE public.job_bids
+    SET
+      contact_shared = true,
+      contact_shared_at = v_now,
+      status = 'pending_payment'
+    WHERE id = p_bid_id;
+  END IF;
 
-    IF v_conversation_id IS NULL THEN
-      SELECT c.id INTO v_conversation_id
-      FROM public.conversations c
-      WHERE c.job_id = v_bid.job_id
-        AND c.craftsman_id = v_bid.craftsman_id;
-    END IF;
+  INSERT INTO public.conversations (job_id, client_id, craftsman_id)
+  VALUES (v_bid.job_id, v_job.client_id, v_bid.craftsman_id)
+  ON CONFLICT (job_id, craftsman_id) DO NOTHING
+  RETURNING id INTO v_conversation_id;
 
-    IF p_intro_message IS NOT NULL AND v_conversation_id IS NOT NULL THEN
-      INSERT INTO public.messages (conversation_id, sender_id, content)
-      VALUES (v_conversation_id, p_client_id, p_intro_message);
-    END IF;
+  IF v_conversation_id IS NULL THEN
+    SELECT c.id INTO v_conversation_id
+    FROM public.conversations c
+    WHERE c.job_id = v_bid.job_id
+      AND c.craftsman_id = v_bid.craftsman_id;
+  END IF;
 
+  IF p_intro_message IS NOT NULL AND v_conversation_id IS NOT NULL THEN
+    INSERT INTO public.messages (conversation_id, sender_id, content)
+    VALUES (v_conversation_id, p_client_id, p_intro_message);
+  END IF;
+
+  IF v_needs_craftsman_payment THEN
     RETURN jsonb_build_object(
       'success', true,
-      'outcome', 'activated',
+      'outcome', 'craftsman_payment_required',
       'conversation_id', v_conversation_id,
-      'used_credit', true,
+      'used_credit', false,
       'job_id', v_bid.job_id,
       'craftsman_id', v_bid.craftsman_id
     );
   END IF;
 
-  UPDATE public.job_bids
-  SET status = 'pending_payment'
-  WHERE id = p_bid_id
-    AND status = 'pending';
-
   RETURN jsonb_build_object(
     'success', true,
-    'outcome', 'needs_payment',
-    'bid_id', v_bid.id,
+    'outcome', 'activated',
+    'conversation_id', v_conversation_id,
+    'used_credit', true,
     'job_id', v_bid.job_id,
     'craftsman_id', v_bid.craftsman_id
   );
 END;
 $$;
 
--- =============================================================================
--- 5. RPC: kapcsolat aktiválása Stripe webhook után (idempotens)
--- =============================================================================
-
+-- Fusizó fizetés után: pending_payment → active (chat már létezik)
 CREATE OR REPLACE FUNCTION public.activate_contact_after_payment(
   p_bid_id UUID,
   p_idempotency_key TEXT,
@@ -285,9 +231,7 @@ BEGIN
     RETURN jsonb_build_object(
       'success', true,
       'outcome', 'skipped_stale_job',
-      'reason', 'job_deleted',
-      'job_id', v_bid.job_id,
-      'craftsman_id', v_bid.craftsman_id
+      'reason', 'job_deleted'
     );
   END IF;
 
@@ -305,19 +249,16 @@ BEGIN
     RETURN jsonb_build_object(
       'success', true,
       'outcome', 'skipped_stale_job',
-      'reason', 'job_closed',
-      'job_id', v_bid.job_id,
-      'craftsman_id', v_bid.craftsman_id,
-      'job_status', v_job.status
+      'reason', 'job_closed'
     );
   END IF;
 
-  IF v_bid.contact_shared THEN
-    SELECT c.id INTO v_conversation_id
-    FROM public.conversations c
-    WHERE c.job_id = v_bid.job_id
-      AND c.craftsman_id = v_bid.craftsman_id;
+  SELECT c.id INTO v_conversation_id
+  FROM public.conversations c
+  WHERE c.job_id = v_bid.job_id
+    AND c.craftsman_id = v_bid.craftsman_id;
 
+  IF v_bid.status = 'active' AND v_bid.contact_shared THEN
     UPDATE public.stripe_idempotency_keys
     SET status = 'completed', completed_at = v_now
     WHERE idempotency_key = p_idempotency_key;
@@ -329,6 +270,25 @@ BEGIN
     );
   END IF;
 
+  IF v_bid.status = 'pending_payment' AND v_bid.contact_shared THEN
+    UPDATE public.job_bids
+    SET status = 'active'
+    WHERE id = p_bid_id;
+
+    UPDATE public.stripe_idempotency_keys
+    SET status = 'completed', completed_at = v_now
+    WHERE idempotency_key = p_idempotency_key;
+
+    RETURN jsonb_build_object(
+      'success', true,
+      'outcome', 'activated',
+      'conversation_id', v_conversation_id,
+      'job_id', v_bid.job_id,
+      'craftsman_id', v_bid.craftsman_id
+    );
+  END IF;
+
+  -- Régi flow: chat még nem létezett (visszafelé kompatibilitás)
   UPDATE public.job_bids
   SET
     contact_shared = true,
@@ -336,23 +296,25 @@ BEGIN
     status = 'active'
   WHERE id = p_bid_id;
 
-  INSERT INTO public.conversations (job_id, client_id, craftsman_id)
-  VALUES (v_bid.job_id, v_job.client_id, v_bid.craftsman_id)
-  ON CONFLICT (job_id, craftsman_id) DO NOTHING
-  RETURNING id INTO v_conversation_id;
-
   IF v_conversation_id IS NULL THEN
-    SELECT c.id INTO v_conversation_id
-    FROM public.conversations c
-    WHERE c.job_id = v_bid.job_id
-      AND c.craftsman_id = v_bid.craftsman_id;
-  END IF;
+    INSERT INTO public.conversations (job_id, client_id, craftsman_id)
+    VALUES (v_bid.job_id, v_job.client_id, v_bid.craftsman_id)
+    ON CONFLICT (job_id, craftsman_id) DO NOTHING
+    RETURNING id INTO v_conversation_id;
 
-  IF p_intro_message IS NOT NULL
-     AND v_conversation_id IS NOT NULL
-     AND p_client_id IS NOT NULL THEN
-    INSERT INTO public.messages (conversation_id, sender_id, content)
-    VALUES (v_conversation_id, p_client_id, p_intro_message);
+    IF v_conversation_id IS NULL THEN
+      SELECT c.id INTO v_conversation_id
+      FROM public.conversations c
+      WHERE c.job_id = v_bid.job_id
+        AND c.craftsman_id = v_bid.craftsman_id;
+    END IF;
+
+    IF p_intro_message IS NOT NULL
+       AND v_conversation_id IS NOT NULL
+       AND p_client_id IS NOT NULL THEN
+      INSERT INTO public.messages (conversation_id, sender_id, content)
+      VALUES (v_conversation_id, p_client_id, p_intro_message);
+    END IF;
   END IF;
 
   UPDATE public.stripe_idempotency_keys
@@ -376,6 +338,3 @@ EXCEPTION
     RAISE;
 END;
 $$;
-
-GRANT EXECUTE ON FUNCTION public.share_contact_with_credit(UUID, UUID, TEXT) TO authenticated;
-GRANT EXECUTE ON FUNCTION public.activate_contact_after_payment(UUID, TEXT, UUID, TEXT, JSONB) TO service_role;

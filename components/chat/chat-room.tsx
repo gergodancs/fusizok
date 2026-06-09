@@ -14,12 +14,16 @@ type ChatRoomProps = {
   conversationId: string;
   currentUserId: string;
   initialMessages: Message[];
+  canSend?: boolean;
+  readOnlyMessage?: string;
 };
 
 export function ChatRoom({
   conversationId,
   currentUserId,
   initialMessages,
+  canSend = true,
+  readOnlyMessage,
 }: ChatRoomProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -124,24 +128,31 @@ export function ChatRoom({
         <div ref={bottomRef} />
       </div>
 
-      <form action={formAction} className="mt-4 flex gap-2">
-        <input type="hidden" name="conversation_id" value={conversationId} />
-        <input
-          name="content"
-          type="text"
-          required
-          placeholder="Írj üzenetet…"
-          className={`flex-1 ${inputClassName}`}
-          autoComplete="off"
-        />
-        <button
-          type="submit"
-          disabled={isPending}
-          className={btnPrimaryClassName}
-        >
-          {isPending ? "…" : "Küldés"}
-        </button>
-      </form>
+      {canSend ? (
+        <form action={formAction} className="mt-4 flex gap-2">
+          <input type="hidden" name="conversation_id" value={conversationId} />
+          <input
+            name="content"
+            type="text"
+            required
+            placeholder="Írj üzenetet…"
+            className={`flex-1 ${inputClassName}`}
+            autoComplete="off"
+          />
+          <button
+            type="submit"
+            disabled={isPending}
+            className={btnPrimaryClassName}
+          >
+            {isPending ? "…" : "Küldés"}
+          </button>
+        </form>
+      ) : (
+        <p className="mt-4 rounded-xl border border-zinc-700 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-400">
+          {readOnlyMessage ??
+            "Jelenleg nem küldhetsz üzenetet ebben a beszélgetésben."}
+        </p>
+      )}
 
       {state.error && (
         <p className="mt-2 text-sm text-red-400">{state.error}</p>

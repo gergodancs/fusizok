@@ -82,6 +82,7 @@ async function handleCheckoutSessionCompleted(
       craftsman_id: craftsmanId,
       client_id: clientId,
       stripe_session_id: session.id,
+      payment_type: metadata.payment_type ?? "legacy",
     },
     clientName,
     jobTitle,

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { PageContainer } from "@/components/layout/page-container";
+import { CraftsmanChatUnlock } from "@/components/payments/craftsman-chat-unlock";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import {
   getConversationHeader,
@@ -28,7 +29,8 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
     notFound();
   }
 
-  const { messages, canAccess } = await getConversationMessages(id, user.id);
+  const { messages, canAccess, canSend, bidId, craftsmanPaymentRequired } =
+    await getConversationMessages(id, user.id);
   if (!canAccess) {
     notFound();
   }
@@ -52,10 +54,20 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
           </p>
         </div>
 
+        {craftsmanPaymentRequired && bidId && (
+          <CraftsmanChatUnlock
+            bidId={bidId}
+            conversationId={id}
+            jobTitle={header.jobTitle}
+          />
+        )}
+
         <ChatRoom
           conversationId={id}
           currentUserId={user.id}
           initialMessages={messages}
+          canSend={canSend}
+          readOnlyMessage="A válaszadáshoz aktiváld a chatet a fenti gombbal."
         />
       </PageContainer>
     </div>

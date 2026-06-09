@@ -10,8 +10,9 @@ import { getStripeServerClient } from "@/lib/stripe/server";
 import type { CreateCheckoutSessionResult } from "@/lib/types/payments";
 import { createClient } from "@/lib/supabase/server";
 
-export async function createContactCheckoutSession(
+export async function createCraftsmanChatCheckoutSession(
   bidId: string,
+  conversationId: string,
 ): Promise<CreateCheckoutSessionResult> {
   const user = await getSessionUser();
   if (!user) {
@@ -34,15 +35,12 @@ export async function createContactCheckoutSession(
     return { ok: false, error: "Az ajánlat nem található." };
   }
 
-  if (bid.contact_shared) {
-    return { ok: false, error: "A kapcsolat már meg van osztva." };
+  if (bid.craftsman_id !== user.id) {
+    return { ok: false, error: "Nincs jogosultságod ehhez a chathez." };
   }
 
-  if (bid.status !== "pending_payment" && bid.status !== "pending") {
-    return {
-      ok: false,
-      error: "Ehhez az ajánlathoz nem indítható fizetés.",
-    };
+  if (!bid.contact_shared || bid.status !== "pending_payment") {
+    return { ok: false, error: "Ehhez a chathez nem szükséges fizetés." };
   }
 
   const { data: job } = await supabase
@@ -51,8 +49,8 @@ export async function createContactCheckoutSession(
     .eq("id", bid.job_id)
     .maybeSingle();
 
-  if (!job || job.client_id !== user.id) {
-    return { ok: false, error: "Nincs jogosultságod ehhez az ajánlathoz." };
+  if (!job) {
+    return { ok: false, error: "A munka nem található." };
   }
 
   if (job.status === "cancelled" || job.status === "completed") {
@@ -75,8 +73,8 @@ export async function createContactCheckoutSession(
               currency: "huf",
               unit_amount: priceHuf,
               product_data: {
-                name: "Chat kapcsolatfelvétel",
-                description: `${job.title} – kapcsolat megosztása`,
+                name: "Chat válaszadás",
+                description: `${job.title} – válasz jogosultság`,
               },
             },
             quantity: 1,
@@ -86,29 +84,27 @@ export async function createContactCheckoutSession(
           bid_id: bid.id,
           job_id: job.id,
           craftsman_id: bid.craftsman_id,
-          client_id: user.id,
+          client_id: job.client_id,
+          payment_type: "craftsman_chat_unlock",
         },
-        return_url: `${appUrl}/lakos/ajanlatok?payment_return=1&bid_id=${bid.id}`,
+        return_url: `${appUrl}/szaki/uzenetek/${conversationId}?payment_return=1&bid_id=${bid.id}`,
       },
       {
-        idempotencyKey: `contact-checkout-${bid.id}-${user.id}`,
+        idempotencyKey: `craftsman-chat-${bid.id}-${user.id}`,
       },
     );
 
     if (!session.client_secret) {
-      console.error("[createContactCheckoutSession] Nincs client_secret", {
-        bidId,
-        sessionId: session.id,
-      });
-      return { ok: false, error: "A fizetési munkamenet létrehozása sikertelen." };
+      return {
+        ok: false,
+        error: "A fizetési munkamenet létrehozása sikertelen.",
+      };
     }
 
-    console.log("[createContactCheckoutSession] Session létrehozva", {
+    console.log("[createCraftsmanChatCheckoutSession] Session létrehozva", {
       bidId,
-      jobId: job.id,
-      craftsmanId: bid.craftsman_id,
-      sessionId: session.id,
-      clientId: user.id,
+      conversationId,
+      craftsmanId: user.id,
     });
 
     return {
@@ -117,12 +113,30 @@ export async function createContactCheckoutSession(
       sessionId: session.id,
     };
   } catch (err) {
-    console.error("[createContactCheckoutSession] Stripe hiba:", {
-      bidId,
-      jobId: job.id,
-      craftsmanId: bid.craftsman_id,
-      error: err instanceof Error ? err.message : String(err),
-    });
+    console.error("[createCraftsmanChatCheckoutSession] Stripe hiba:", err);
     return { ok: false, error: "A fizetés indítása sikertelen. Próbáld újra." };
   }
+}
+
+export async function pollCraftsmanChatUnlock(
+  bidId: string,
+): Promise<{ ok: boolean; unlocked: boolean; error?: string }> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { ok: false, unlocked: false, error: "Bejelentkezés szükséges." };
+  }
+
+  const supabase = await createClient();
+
+  const { data: bid } = await supabase
+    .from("job_bids")
+    .select("id, craftsman_id, status")
+    .eq("id", bidId)
+    .maybeSingle();
+
+  if (!bid || bid.craftsman_id !== user.id) {
+    return { ok: false, unlocked: false, error: "Nincs jogosultság." };
+  }
+
+  return { ok: true, unlocked: bid.status === "active" };
 }

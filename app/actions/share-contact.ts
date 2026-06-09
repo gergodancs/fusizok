@@ -44,17 +44,26 @@ async function sendCraftsmanActivationNotification(params: {
   jobTitle: string;
   conversationId: string;
   bidId: string;
+  paymentRequired: boolean;
 }) {
   const appUrl = getAppBaseUrl();
+
+  const title = params.paymentRequired
+    ? "Új érdeklődő – fizetés szükséges a válaszhoz"
+    : "Ajánlat elfogadva!";
+
+  const body = params.paymentRequired
+    ? `${params.clientName} megosztotta veled a kapcsolatot a(z) „${params.jobTitle}” munkánál. A válaszadáshoz egyszeri díj szükséges.`
+    : `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`;
 
   try {
     const notifyResult = await notifyUser({
       userId: params.craftsmanId,
-      title: "Ajánlat elfogadva!",
-      body: `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`,
+      title,
+      body,
       url: `${appUrl}/szaki/uzenetek/${params.conversationId}`,
-      emailSubject: `Ajánlat elfogadva – ${params.jobTitle}`,
-      emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${params.clientName} elfogadta az ajánlatodat a(z) <strong>${params.jobTitle}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${params.conversationId}">Chat megnyitása</a></p>`,
+      emailSubject: `${title} – ${params.jobTitle}`,
+      emailHtml: `<p>Szia!</p><p>${body}</p><p><a href="${appUrl}/szaki/uzenetek/${params.conversationId}">Chat megnyitása</a></p>`,
       tag: `bid-accepted-${params.bidId}`,
     });
     console.log("[shareContact] Értesítés eredménye:", notifyResult);
@@ -86,7 +95,7 @@ export async function initiateShareContact(
 
   const profile = await getUserProfile(user.id);
   const clientName = profile?.full_name ?? "A megrendelő";
-  const introMessage = `Szia! ${clientName}-nek tetszik az ajánlatod, mondj róla többet!`;
+  const introMessage = `Szia! Köszönöm a pályázatod! ${clientName} tetszik az ajánlatod – mesélj még róla!`;
 
   const supabase = await createClient();
 
@@ -119,17 +128,6 @@ export async function initiateShareContact(
 
   console.log("[shareContact] RPC eredmény:", result);
 
-  if (result.outcome === "needs_payment") {
-    revalidateSharePaths();
-    return {
-      ok: true,
-      outcome: "needs_payment",
-      bidId: result.bid_id ?? bidId,
-      jobId: result.job_id!,
-      craftsmanId: result.craftsman_id!,
-    };
-  }
-
   const conversationId = result.conversation_id;
   if (!conversationId) {
     return { ok: false, error: "A chat indítása sikertelen." };
@@ -141,21 +139,33 @@ export async function initiateShareContact(
     .eq("id", result.job_id ?? "")
     .maybeSingle();
 
-  if (result.outcome === "activated" && result.craftsman_id) {
+  if (
+    result.craftsman_id &&
+    (result.outcome === "activated" ||
+      result.outcome === "craftsman_payment_required")
+  ) {
     await sendCraftsmanActivationNotification({
       craftsmanId: result.craftsman_id,
       clientName,
       jobTitle: job?.title ?? "Munka",
       conversationId,
       bidId,
+      paymentRequired: result.outcome === "craftsman_payment_required",
     });
   }
 
   revalidateSharePaths(conversationId);
 
+  const outcome =
+    result.outcome === "already_active"
+      ? "already_active"
+      : result.outcome === "craftsman_payment_required"
+        ? "craftsman_payment_required"
+        : "activated";
+
   return {
     ok: true,
-    outcome: result.outcome === "already_active" ? "already_active" : "activated",
+    outcome,
     conversationId,
     craftsmanId: result.craftsman_id!,
     jobId: result.job_id!,

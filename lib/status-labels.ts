@@ -13,7 +13,7 @@ export const JOB_BID_STATUS_LABELS: Record<JobBidStatus, string> = {
   accepted: "Elfogadva",
   rejected: "Elutasítva",
   active: "Aktív chat",
-  pending_payment: "Fizetésre vár",
+  pending_payment: "Válasz fizetésre vár",
 };
 
 export function getJobStatusLabel(status: string): string {
@@ -28,6 +28,9 @@ export function getBidActivityStatusLabel(bid: {
   status: string;
   contact_shared: boolean;
 }): string {
+  if (bid.contact_shared && bid.status === "pending_payment") {
+    return "Chat – fusizó fizetésre vár";
+  }
   if (bid.contact_shared) {
     return "Kontakt megosztva";
   }

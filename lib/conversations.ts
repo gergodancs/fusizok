@@ -1,4 +1,7 @@
-import { canUserAccessConversation } from "@/lib/chat-access";
+import {
+  canCraftsmanSendInConversation,
+  canUserAccessConversation,
+} from "@/lib/chat-access";
 import { createClient } from "@/lib/supabase/server";
 import type { ConversationWithDetails } from "@/lib/types/conversation";
 import type { Message } from "@/lib/types/message";
@@ -111,7 +114,13 @@ export async function findConversationByJob(
 export async function getConversationMessages(
   conversationId: string,
   userId: string,
-): Promise<{ messages: Message[]; canAccess: boolean }> {
+): Promise<{
+  messages: Message[];
+  canAccess: boolean;
+  canSend: boolean;
+  bidId: string | null;
+  craftsmanPaymentRequired: boolean;
+}> {
   const supabase = await createClient();
 
   const { data: conversation } = await supabase
@@ -121,12 +130,46 @@ export async function getConversationMessages(
     .maybeSingle();
 
   if (!conversation) {
-    return { messages: [], canAccess: false };
+    return {
+      messages: [],
+      canAccess: false,
+      canSend: false,
+      bidId: null,
+      craftsmanPaymentRequired: false,
+    };
   }
 
   const hasAccess = await canUserAccessConversation(conversation, userId);
   if (!hasAccess) {
-    return { messages: [], canAccess: false };
+    return {
+      messages: [],
+      canAccess: false,
+      canSend: false,
+      bidId: null,
+      craftsmanPaymentRequired: false,
+    };
+  }
+
+  const isCraftsman = conversation.craftsman_id === userId;
+  let canSend = true;
+  let craftsmanPaymentRequired = false;
+  let bidId: string | null = null;
+
+  if (isCraftsman) {
+    canSend = await canCraftsmanSendInConversation(
+      conversation.job_id,
+      conversation.craftsman_id,
+    );
+
+    const { data: bid } = await supabase
+      .from("job_bids")
+      .select("id, status")
+      .eq("job_id", conversation.job_id)
+      .eq("craftsman_id", conversation.craftsman_id)
+      .maybeSingle();
+
+    bidId = bid?.id ?? null;
+    craftsmanPaymentRequired = bid?.status === "pending_payment";
   }
 
   const { data, error } = await supabase
@@ -137,10 +180,22 @@ export async function getConversationMessages(
 
   if (error) {
     console.error("Üzenetek lekérdezési hiba:", error.message);
-    return { messages: [], canAccess: true };
+    return {
+      messages: [],
+      canAccess: true,
+      canSend,
+      bidId,
+      craftsmanPaymentRequired,
+    };
   }
 
-  return { messages: (data ?? []) as Message[], canAccess: true };
+  return {
+    messages: (data ?? []) as Message[],
+    canAccess: true,
+    canSend,
+    bidId,
+    craftsmanPaymentRequired,
+  };
 }
 
 export async function getConversationHeader(
