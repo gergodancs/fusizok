@@ -1,17 +1,17 @@
-import { CoverageAreaPicker } from "@/components/location/coverage-area-picker";
+import { CraftsmanLocationFields } from "@/components/craftsman/craftsman-location-fields";
 import { JOB_CATEGORIES } from "@/lib/job-categories";
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
-import type { CoverageArea } from "@/lib/places";
+import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
 import { inputClassName, labelClassName } from "@/lib/ui-classes";
 
 type CraftsmanProfileFieldsProps = {
-  defaultCoverageAreas?: CoverageArea[];
+  defaultLocation: CraftsmanLocationEdit;
   defaultCategories?: string[];
   defaultBio?: string | null;
 };
 
 export function CraftsmanProfileFields({
-  defaultCoverageAreas = [],
+  defaultLocation,
   defaultCategories = [],
   defaultBio = null,
 }: CraftsmanProfileFieldsProps) {
@@ -60,7 +60,7 @@ export function CraftsmanProfileFields({
         </div>
       </div>
 
-      <CoverageAreaPicker defaultAreas={defaultCoverageAreas} />
+      <CraftsmanLocationFields defaultLocation={defaultLocation} />
     </>
   );
 }

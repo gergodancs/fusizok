@@ -1,7 +1,11 @@
 "use server";
 
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
-import { normalizeCoverageAreas } from "@/lib/places";
+import { applyCraftsmanLocationGps } from "@/lib/location/gps-db";
+import {
+  parseLocationFromFormData,
+  parseServiceRadiusKm,
+} from "@/lib/location/parse-location-form";
 import { revalidatePath } from "next/cache";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import { getSessionUser } from "@/lib/auth/session";
@@ -27,24 +31,18 @@ export async function updateCraftsmanProfile(
     .map((v) => (v as string).trim())
     .filter((v) => JOB_CATEGORIES.includes(v as JobCategory));
 
-  const counties = formData
-    .getAll("coverage_counties")
-    .map((v) => (v as string).trim())
-    .filter(Boolean);
-
-  const places = formData
-    .getAll("coverage_places")
-    .map((v) => (v as string).trim())
-    .filter(Boolean);
-
-  const coverageAreas = normalizeCoverageAreas(counties, places);
+  const location = parseLocationFromFormData(formData);
+  const serviceRadiusKm = parseServiceRadiusKm(formData);
 
   if (selectedCategories.length === 0) {
     return { error: "Válassz legalább egy kategóriát." };
   }
 
-  if (coverageAreas.length === 0) {
-    return { error: "Adj meg legalább egy települést, ahol vállalsz munkát." };
+  if (!location) {
+    return {
+      error:
+        "Add meg a helyszínt GPS-sel vagy válaszd ki kézzel a megyét és települést.",
+    };
   }
 
   const bioRaw = (formData.get("bio") as string) ?? "";
@@ -58,21 +56,39 @@ export async function updateCraftsmanProfile(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.from("craftsman_profiles").upsert(
-    {
-      id: user.id,
-      profession: selectedCategories.join(", "),
-      coverage_counties: coverageAreas.map((area) => area.county),
-      coverage_zip_codes: coverageAreas.map((area) => area.place),
-      bio,
-    },
-    { onConflict: "id" },
-  );
+  const payload: Record<string, unknown> =
+    location.mode === "gps"
+      ? {
+          id: user.id,
+          profession: selectedCategories.join(", "),
+          county: null,
+          city: null,
+          coverage_counties: [],
+          coverage_zip_codes: [],
+          service_radius_km: serviceRadiusKm,
+          bio,
+        }
+      : {
+          id: user.id,
+          profession: selectedCategories.join(", "),
+          county: location.county,
+          city: location.city,
+          coverage_counties: [location.county],
+          coverage_zip_codes: [location.city],
+          service_radius_km: serviceRadiusKm,
+          bio,
+        };
+
+  const { error } = await supabase
+    .from("craftsman_profiles")
+    .upsert(payload, { onConflict: "id" });
 
   if (error) {
     console.error("Fusizó profil mentési hiba:", error.message);
     return { error: "A profil mentése sikertelen. Próbáld újra." };
   }
+
+  await applyCraftsmanLocationGps(supabase, user.id, location);
 
   revalidatePath("/szaki");
   revalidatePath("/szaki/profil");

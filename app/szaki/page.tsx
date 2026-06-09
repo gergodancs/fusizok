@@ -4,7 +4,10 @@ import { JobCard } from "@/components/jobs/job-card";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getMatchedJobsForCraftsman } from "@/lib/craftsman";
-import { getCraftsmanProfileForEdit } from "@/lib/craftsman-profile";
+import {
+  craftsmanHasServiceArea,
+  getCraftsmanProfileForEdit,
+} from "@/lib/craftsman-profile";
 import { markOpenJobsSeen } from "@/lib/notifications";
 import { formatLocationLabel } from "@/lib/places";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
@@ -18,14 +21,23 @@ export const dynamic = "force-dynamic";
 
 export default async function SzakiPage() {
   const { user } = await requireCraftsman("/szaki");
-  const { professions, coverageAreas } = await getCraftsmanProfileForEdit(user.id);
+  const profile = await getCraftsmanProfileForEdit(user.id);
 
-  if (professions.length === 0 || coverageAreas.length === 0) {
+  if (profile.professions.length === 0 || !craftsmanHasServiceArea(profile)) {
     redirect("/szaki/profil");
   }
 
   const { jobs } = await getMatchedJobsForCraftsman(user.id);
   await markOpenJobsSeen(user.id);
+
+  const locationLabel =
+    profile.location.mode === "gps"
+      ? `GPS · ${profile.location.serviceRadiusKm} km sugár`
+      : profile.location.county && profile.location.city
+        ? `${formatLocationLabel(profile.location.county, profile.location.city)} · ${profile.location.serviceRadiusKm} km`
+        : profile.coverageAreas
+            .map((area) => formatLocationLabel(area.county, area.place))
+            .join(", ");
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -37,12 +49,12 @@ export default async function SzakiPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-zinc-400">
             Csak azokat a nyitott melókat látod, amelyek illeszkednek a
-            profilodban megadott kategóriákhoz és területekhez, és amelyekre
-            még nem pályáztál.
+            profilodhoz (GPS sugár vagy kézi terület), és amelyekre még nem
+            pályáztál.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {professions.map((profession) => (
+            {profile.professions.map((profession) => (
               <span
                 key={profession}
                 className="rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400"
@@ -50,14 +62,11 @@ export default async function SzakiPage() {
                 {profession}
               </span>
             ))}
-            {coverageAreas.map((area) => (
-              <span
-                key={`${area.county}|${area.place}`}
-                className="rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400"
-              >
-                {formatLocationLabel(area.county, area.place)}
+            {locationLabel && (
+              <span className="rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
+                {locationLabel}
               </span>
-            ))}
+            )}
           </div>
         </div>
 
@@ -67,8 +76,8 @@ export default async function SzakiPage() {
               Nincs illeszkedő munka
             </p>
             <p className="mt-2 text-sm text-zinc-500">
-              Jelenleg nincs olyan nyitott meló a kiválasztott területeiden,
-              ami passzol a profilodhoz. Nézz vissza később!
+              Jelenleg nincs olyan nyitott meló a beállított területeden, ami
+              passzol a profilodhoz. Nézz vissza később!
             </p>
           </div>
         ) : (

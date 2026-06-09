@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { parseRoleFormValue } from "@/lib/auth/oauth-role";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { saveCraftsmanLocationFromForm } from "@/lib/location/save-craftsman-location";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = {
@@ -111,6 +112,11 @@ export async function register(
 
   if (data.session && data.user) {
     await syncUserProfile(data.user);
+
+    if (role === "craftsman") {
+      await saveCraftsmanLocationFromForm(supabase, data.user.id, formData);
+    }
+
     revalidatePath("/", "layout");
     redirect(resolvePostLoginPath(redirectTo, role));
   }

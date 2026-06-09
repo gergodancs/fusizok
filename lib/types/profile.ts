@@ -10,6 +10,10 @@ export type Profile = {
 export type CraftsmanProfile = {
   id: string;
   profession: string | string[] | null;
+  county?: string | null;
+  city?: string | null;
+  location_gps?: unknown | null;
+  service_radius_km?: number;
   /** Lefedett megyék – coverage_zip_codes-szal párosítva */
   coverage_counties: string[];
   /** Lefedett települések/kerületek (DB: coverage_zip_codes) */
@@ -20,6 +24,9 @@ export type CraftsmanProfile = {
 
 export type CraftsmanProfileUpdate = {
   profession?: string | string[] | null;
+  county?: string | null;
+  city?: string | null;
+  service_radius_km?: number;
   coverage_counties?: string[];
   coverage_zip_codes?: string[];
   bio?: string | null;

@@ -7,20 +7,30 @@ import {
   type CraftsmanProfileFormState,
 } from "@/app/actions/craftsman-profile";
 import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile-fields";
+import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
+import { DEFAULT_SERVICE_RADIUS_KM } from "@/lib/location/types";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
-import type { CoverageArea } from "@/lib/places";
 
 const initialState: CraftsmanProfileFormState = {};
 
+const emptyLocation: CraftsmanLocationEdit = {
+  mode: null,
+  latitude: null,
+  longitude: null,
+  county: "",
+  city: "",
+  serviceRadiusKm: DEFAULT_SERVICE_RADIUS_KM,
+};
+
 type CraftsmanProfileFormProps = {
-  defaultCoverageAreas?: CoverageArea[];
+  defaultLocation?: CraftsmanLocationEdit;
   defaultCategories?: string[];
   defaultBio?: string | null;
   redirectOnSuccess?: string;
 };
 
 export function CraftsmanProfileForm({
-  defaultCoverageAreas = [],
+  defaultLocation = emptyLocation,
   defaultCategories = [],
   defaultBio = null,
   redirectOnSuccess = "/szaki",
@@ -54,7 +64,7 @@ export function CraftsmanProfileForm({
 
       <CraftsmanProfileFields
         defaultCategories={defaultCategories}
-        defaultCoverageAreas={defaultCoverageAreas}
+        defaultLocation={defaultLocation}
         defaultBio={defaultBio}
       />
 

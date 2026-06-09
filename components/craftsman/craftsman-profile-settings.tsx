@@ -8,22 +8,22 @@ import {
 } from "@/app/actions/craftsman-profile";
 import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile-fields";
 import { PortfolioManager } from "@/components/craftsman/portfolio-manager";
+import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
 import type { PortfolioImage } from "@/lib/types/portfolio";
-import type { CoverageArea } from "@/lib/places";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
 const FORM_ID = "craftsman-profile-save-form";
 const initialState: CraftsmanProfileFormState = {};
 
 type CraftsmanProfileSettingsProps = {
-  defaultCoverageAreas?: CoverageArea[];
+  defaultLocation: CraftsmanLocationEdit;
   defaultCategories?: string[];
   defaultBio?: string | null;
   portfolioImages: PortfolioImage[];
 };
 
 export function CraftsmanProfileSettings({
-  defaultCoverageAreas = [],
+  defaultLocation,
   defaultCategories = [],
   defaultBio = null,
   portfolioImages,
@@ -49,7 +49,7 @@ export function CraftsmanProfileSettings({
       >
         <CraftsmanProfileFields
           defaultCategories={defaultCategories}
-          defaultCoverageAreas={defaultCoverageAreas}
+          defaultLocation={defaultLocation}
           defaultBio={defaultBio}
         />
       </form>

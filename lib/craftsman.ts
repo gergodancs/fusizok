@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { CraftsmanProfile } from "@/lib/types/profile";
 import type { JobBidStats } from "@/lib/job-bid-stats";
 import { getJobBidStatsByJobIds } from "@/lib/job-bid-stats";
+import { filterMatchedJobIds } from "@/lib/location/gps-db";
 import {
   type CoverageArea,
   jobMatchesCoverage,
@@ -44,7 +45,9 @@ export async function getMatchedJobsForCraftsman(
 
   const { data: craftsmanProfile, error: profileError } = await supabase
     .from("craftsman_profiles")
-    .select("id, profession, coverage_counties, coverage_zip_codes")
+    .select(
+      "id, profession, coverage_counties, coverage_zip_codes, county, city, location_gps, service_radius_km",
+    )
     .eq("id", userId)
     .maybeSingle();
 
@@ -64,7 +67,16 @@ export async function getMatchedJobsForCraftsman(
     craftsmanProfile?.coverage_zip_codes,
   );
 
-  if (!craftsmanProfile || professions.length === 0 || coverageAreas.length === 0) {
+  const hasGps = Boolean(craftsmanProfile?.location_gps);
+  const hasManual =
+    Boolean(craftsmanProfile?.county && craftsmanProfile?.city) ||
+    coverageAreas.length > 0;
+
+  if (
+    !craftsmanProfile ||
+    professions.length === 0 ||
+    (!hasGps && !hasManual)
+  ) {
     return {
       jobs: [],
       craftsmanProfile: (craftsmanProfile as CraftsmanProfile) ?? null,
@@ -76,7 +88,7 @@ export async function getMatchedJobsForCraftsman(
   const { data, error: jobsError } = await supabase
     .from("jobs")
     .select(
-      "id, client_id, title, description, category, county, zip_code, status, required_completion_time, image_urls, created_at",
+      "id, client_id, title, description, category, county, city, zip_code, status, required_completion_time, image_urls, created_at, location_gps",
     )
     .eq("status", "open")
     .in("category", professions)
@@ -102,11 +114,21 @@ export async function getMatchedJobsForCraftsman(
   }
 
   const bidJobIds = new Set((existingBids ?? []).map((b) => b.job_id));
-
-  const matchedJobs = ((data ?? []) as Job[]).filter(
-    (job) =>
-      !bidJobIds.has(job.id) && jobMatchesCoverage(job, coverageAreas),
+  const candidateJobs = ((data ?? []) as Job[]).filter(
+    (job) => !bidJobIds.has(job.id),
   );
+
+  const candidateIds = candidateJobs.map((job) => job.id);
+  const rpcMatchedIds = await filterMatchedJobIds(
+    supabase,
+    userId,
+    candidateIds,
+  );
+
+  const matchedJobs =
+    rpcMatchedIds !== null
+      ? candidateJobs.filter((job) => rpcMatchedIds.includes(job.id))
+      : candidateJobs.filter((job) => jobMatchesCoverage(job, coverageAreas));
 
   const statsByJobId = await getJobBidStatsByJobIds(
     matchedJobs.map((job) => job.id),

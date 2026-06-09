@@ -1,10 +1,14 @@
 import { migrateLegacyDistrict } from "@/lib/places";
+import type { LocationMode } from "@/lib/location/types";
 
 export type JobFormDraft = {
   title: string;
   category: string;
+  locationMode: LocationMode | null;
+  latitude: number | null;
+  longitude: number | null;
   county: string;
-  place: string;
+  city: string;
   description: string;
   required_completion_time: string;
 };
@@ -12,6 +16,7 @@ export type JobFormDraft = {
 const DRAFT_KEY = "fusizok-job-draft";
 
 type LegacyJobFormDraft = Partial<JobFormDraft> & {
+  place?: string;
   zip_code?: string;
 };
 
@@ -26,23 +31,35 @@ function normalizeDraft(raw: LegacyJobFormDraft): JobFormDraft | null {
   }
 
   let county = typeof raw.county === "string" ? raw.county : "";
-  let place = typeof raw.place === "string" ? raw.place : "";
+  let city = typeof raw.city === "string" ? raw.city : "";
+  const locationMode = raw.locationMode ?? null;
+  const latitude =
+    typeof raw.latitude === "number" && Number.isFinite(raw.latitude)
+      ? raw.latitude
+      : null;
+  const longitude =
+    typeof raw.longitude === "number" && Number.isFinite(raw.longitude)
+      ? raw.longitude
+      : null;
 
-  if ((!county || !place) && raw.zip_code) {
-    const legacy = migrateLegacyDistrict(raw.zip_code);
+  if ((!county || !city) && (raw.place || raw.zip_code)) {
+    const legacy = migrateLegacyDistrict(raw.place ?? raw.zip_code ?? "");
     if (legacy) {
       county = legacy.county;
-      place = legacy.place;
-    } else if (!place) {
-      place = raw.zip_code;
+      city = legacy.place;
+    } else if (!city) {
+      city = raw.place ?? raw.zip_code ?? "";
     }
   }
 
   return {
     title: raw.title,
     category: raw.category,
+    locationMode,
+    latitude,
+    longitude,
     county,
-    place,
+    city,
     description: raw.description,
     required_completion_time: raw.required_completion_time,
   };

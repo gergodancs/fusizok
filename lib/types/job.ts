@@ -6,10 +6,14 @@ export type Job = {
   title: string;
   description: string;
   category: string;
-  /** Megye neve */
+  /** Megye neve (kézi megadás) */
   county?: string | null;
-  /** Település vagy kerület neve (DB oszlop: zip_code) */
-  zip_code: string;
+  /** Település vagy kerület (kézi megadás) */
+  city?: string | null;
+  /** Település vagy kerület – visszafelé kompatibilitás */
+  zip_code?: string | null;
+  /** PostGIS geography – GPS helyszín */
+  location_gps?: unknown | null;
   status: JobStatus;
   required_completion_time?: string | null;
   image_urls?: string[] | null;

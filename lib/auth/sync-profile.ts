@@ -41,6 +41,7 @@ export async function syncUserProfile(user: User): Promise<void> {
           id: user.id,
           coverage_counties: [],
           coverage_zip_codes: [],
+          service_radius_km: 25,
         },
         { onConflict: "id", ignoreDuplicates: true },
       );

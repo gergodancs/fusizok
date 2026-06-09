@@ -13,6 +13,8 @@ export type CraftsmanPublicProfile = {
   bio: string | null;
   professions: string[];
   coverageAreas: CoverageArea[];
+  serviceRadiusKm: number;
+  usesGps: boolean;
   portfolioImages: PortfolioImage[];
   reviewSummary: CraftsmanReviewSummary;
 };
@@ -121,7 +123,9 @@ export async function getCraftsmanPublicProfile(
 
   const { data: craftsman, error: craftsmanError } = await supabase
     .from("craftsman_profiles")
-    .select("profession, coverage_counties, coverage_zip_codes, bio")
+    .select(
+      "profession, coverage_counties, coverage_zip_codes, county, city, location_gps, service_radius_km, bio",
+    )
     .eq("id", craftsmanId)
     .maybeSingle();
 
@@ -145,6 +149,8 @@ export async function getCraftsmanPublicProfile(
       craftsman?.coverage_counties,
       craftsman?.coverage_zip_codes,
     ),
+    serviceRadiusKm: craftsman?.service_radius_km ?? 25,
+    usesGps: Boolean(craftsman?.location_gps),
     portfolioImages,
     reviewSummary,
   };

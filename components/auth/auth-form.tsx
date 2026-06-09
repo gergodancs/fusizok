@@ -3,6 +3,8 @@
 import { useActionState, useState } from "react";
 import { login, register, type AuthFormState } from "@/app/actions/auth";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { HybridLocationPicker } from "@/components/location/hybrid-location-picker";
+import { ServiceRadiusSlider } from "@/components/location/service-radius-slider";
 import type { UserRole } from "@/lib/types/profile";
 import { btnPrimaryClassName, inputClassName, labelClassName } from "@/lib/ui-classes";
 
@@ -64,6 +66,7 @@ function RoleSelection({
 export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
+  const [craftsmanHasLocation, setCraftsmanHasLocation] = useState(false);
   const [loginState, loginAction, isLoginPending] = useActionState(
     login,
     initialState,
@@ -167,6 +170,21 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
               placeholder="Kovács János"
               className={inputClassName}
             />
+          </div>
+        )}
+
+        {mode === "register" && selectedRole === "craftsman" && (
+          <div className="space-y-4 rounded-2xl border border-zinc-700 bg-zinc-900/40 p-4">
+            <p className="text-sm text-zinc-400">
+              Hol vállalnál munkát? GPS-sel pontosan, vagy kézzel is megadhatod
+              – később a profilodban módosíthatod.
+            </p>
+            <HybridLocationPicker
+              label="Bázis helyszín"
+              required={false}
+              onChange={(value) => setCraftsmanHasLocation(value.mode !== null)}
+            />
+            {craftsmanHasLocation && <ServiceRadiusSlider />}
           </div>
         )}
 

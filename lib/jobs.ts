@@ -6,7 +6,7 @@ export async function getJobs(): Promise<Job[]> {
 
   const { data, error } = await supabase
     .from("jobs")
-    .select("id, client_id, title, description, category, county, zip_code, status, created_at")
+    .select("id, client_id, title, description, category, county, city, zip_code, location_gps, status, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {

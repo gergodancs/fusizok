@@ -9,7 +9,9 @@ export type BidWithJob = JobBid & {
     status: JobStatus;
     category: string;
     county?: string | null;
+    city?: string | null;
     zip_code: string;
+    location_gps?: unknown | null;
     client_id: string;
   };
 };
@@ -70,7 +72,9 @@ export async function getCraftsmanActivity(
         status,
         category,
         county,
+        city,
         zip_code,
+        location_gps,
         client_id
       )
     `,

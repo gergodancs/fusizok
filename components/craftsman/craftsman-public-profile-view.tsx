@@ -68,12 +68,15 @@ export function CraftsmanPublicProfileView({
                 ))}
               </div>
             )}
-            {profile.coverageAreas.length > 0 && (
+            {(profile.usesGps || profile.coverageAreas.length > 0) && (
               <p className="mt-3 text-sm text-zinc-500">
-                Területek:{" "}
-                {profile.coverageAreas
-                  .map((area) => formatLocationLabel(area.county, area.place))
-                  .join(", ")}
+                {profile.usesGps
+                  ? `GPS alapú vállalási körzet · ${profile.serviceRadiusKm} km`
+                  : `Területek: ${profile.coverageAreas
+                      .map((area) =>
+                        formatLocationLabel(area.county, area.place),
+                      )
+                      .join(", ")}`}
               </p>
             )}
           </div>

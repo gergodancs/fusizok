@@ -27,7 +27,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, title, description, category, county, zip_code, status, required_completion_time, image_urls, created_at",
+      "id, title, description, category, county, city, zip_code, location_gps, status, required_completion_time, image_urls, created_at",
     )
     .eq("id", jobId)
     .eq("status", "open")

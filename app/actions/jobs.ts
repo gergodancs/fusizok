@@ -5,7 +5,8 @@ import {
 } from "@/lib/completion-time-options";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import type { JobFormDraft } from "@/lib/job-form-draft";
-import { isValidJobLocation } from "@/lib/places";
+import { applyJobLocationGps } from "@/lib/location/gps-db";
+import { parseLocationFromFormData } from "@/lib/location/parse-location-form";
 import { uploadJobImages } from "@/lib/storage/upload-job-images";
 import { createClient } from "@/lib/supabase/server";
 
@@ -21,8 +22,9 @@ type JobInsert = {
   title: string;
   description: string;
   category: string;
-  county: string;
-  zip_code: string;
+  county: string | null;
+  city: string | null;
+  zip_code: string | null;
   status: "open";
   required_completion_time: string;
   image_urls: string[];
@@ -34,18 +36,20 @@ export async function createJob(
 ): Promise<JobFormState> {
   const title = (formData.get("title") as string)?.trim();
   const category = formData.get("category") as string;
-  const county = (formData.get("county") as string)?.trim();
-  const place = (formData.get("place") as string)?.trim();
   const description = (formData.get("description") as string)?.trim();
   const requiredCompletionTime = (
     formData.get("required_completion_time") as string
   )?.trim();
+  const location = parseLocationFromFormData(formData);
 
   const draft: JobFormDraft = {
     title: title ?? "",
     category: category ?? "",
-    county: county ?? "",
-    place: place ?? "",
+    locationMode: location?.mode ?? null,
+    latitude: location?.mode === "gps" ? location.latitude : null,
+    longitude: location?.mode === "gps" ? location.longitude : null,
+    county: location?.mode === "manual" ? location.county : "",
+    city: location?.mode === "manual" ? location.city : "",
     description: description ?? "",
     required_completion_time: requiredCompletionTime ?? "",
   };
@@ -58,8 +62,12 @@ export async function createJob(
     return { error: "Kérjük, válasszon szakma kategóriát.", draft };
   }
 
-  if (!county || !place || !isValidJobLocation(county, place)) {
-    return { error: "Kérjük, válasszon érvényes megyét és települést.", draft };
+  if (!location) {
+    return {
+      error:
+        "Kérjük, adja meg a helyszínt GPS-sel vagy válassza ki kézzel a megyét és települést.",
+      draft,
+    };
   }
 
   if (!description) {
@@ -103,25 +111,46 @@ export async function createJob(
     return { error: uploadError, draft };
   }
 
-  const payload: JobInsert = {
-    client_id: user.id,
-    title,
-    description,
-    category,
-    county,
-    zip_code: place,
-    status: "open",
-    required_completion_time: requiredCompletionTime,
-    image_urls: imageUrls,
-  };
+  const payload: JobInsert =
+    location.mode === "gps"
+      ? {
+          client_id: user.id,
+          title,
+          description,
+          category,
+          county: null,
+          city: null,
+          zip_code: null,
+          status: "open",
+          required_completion_time: requiredCompletionTime,
+          image_urls: imageUrls,
+        }
+      : {
+          client_id: user.id,
+          title,
+          description,
+          category,
+          county: location.county,
+          city: location.city,
+          zip_code: location.city,
+          status: "open",
+          required_completion_time: requiredCompletionTime,
+          image_urls: imageUrls,
+        };
 
-  const { error } = await supabase.from("jobs").insert(payload);
+  const { data: insertedJob, error } = await supabase
+    .from("jobs")
+    .insert(payload)
+    .select("id")
+    .single();
 
-  if (error) {
+  if (error || !insertedJob) {
     console.error("Supabase mentési hiba:", error);
     console.error("Beszúrandó adatok:", payload);
     return { error: "A mentés sikertelen. Kérjük, próbálja újra később.", draft };
   }
+
+  await applyJobLocationGps(supabase, insertedJob.id, location);
 
   return { success: true };
 }

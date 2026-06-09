@@ -1,19 +1,19 @@
 import Link from "next/link";
 import { CraftsmanProfileForm } from "@/components/craftsman/craftsman-profile-form";
 import { PageContainer } from "@/components/layout/page-container";
-import type { CoverageArea } from "@/lib/places";
+import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
 import { btnPrimaryClassName, cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
 type CraftsmanAccessMessageProps = {
   variant: "client" | "incomplete-profile";
   professions?: string[];
-  coverageAreas?: CoverageArea[];
+  defaultLocation?: CraftsmanLocationEdit;
 };
 
 export function CraftsmanAccessMessage({
   variant,
   professions = [],
-  coverageAreas = [],
+  defaultLocation,
 }: CraftsmanAccessMessageProps) {
   const isClient = variant === "client";
 
@@ -50,12 +50,12 @@ export function CraftsmanAccessMessage({
                 Állítsd be a fusizó profilodat
               </h1>
               <p className="mt-3 text-zinc-400">
-                Válaszd ki, milyen munkákat vállalsz és hol – csak ezekhez
-                illeszkedő melókat fogsz látni.
+                Válaszd ki a munkákat, add meg a helyszíned (GPS vagy kézzel),
+                és állítsd be a vállalási sugarat.
               </p>
               <CraftsmanProfileForm
                 defaultCategories={professions}
-                defaultCoverageAreas={coverageAreas}
+                defaultLocation={defaultLocation}
               />
             </>
           )}

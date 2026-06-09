@@ -136,11 +136,18 @@ export function formatLocationLabel(county: string, place: string): string {
 
 export function formatJobLocation(job: {
   county?: string | null;
+  city?: string | null;
   zip_code?: string | null;
+  location_gps?: unknown | null;
 }): string {
-  const area = normalizeCoverageArea(job.county, job.zip_code);
+  if (job.location_gps) {
+    return "GPS – pontos helyszín";
+  }
+
+  const placeName = job.city ?? job.zip_code;
+  const area = normalizeCoverageArea(job.county, placeName);
   if (!area) {
-    return job.zip_code?.trim() || "—";
+    return placeName?.trim() || "—";
   }
   return formatLocationLabel(area.county, area.place);
 }
@@ -150,12 +157,17 @@ export function isValidJobLocation(county: string, place: string): boolean {
 }
 
 export function jobMatchesCoverage(
-  job: { county?: string | null; place?: string | null; zip_code?: string | null },
+  job: {
+    county?: string | null;
+    place?: string | null;
+    city?: string | null;
+    zip_code?: string | null;
+  },
   areas: CoverageArea[],
 ): boolean {
   const normalizedJob = normalizeCoverageArea(
     job.county,
-    job.place ?? job.zip_code,
+    job.place ?? job.city ?? job.zip_code,
   );
   if (!normalizedJob) {
     return false;
