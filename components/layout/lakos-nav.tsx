@@ -19,6 +19,7 @@ const links = [
     exact: false,
     badgeKey: "unreadMessages" as const,
   },
+  { href: "/lakos/profil", label: "Profil", exact: true, badgeKey: null },
 ];
 
 type LakosNavProps = {

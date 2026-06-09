@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { ChatJobActions } from "@/components/reviews/chat-job-actions";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
 import {
   getConversationHeader,
   getConversationMessages,
 } from "@/lib/conversations";
+import { getConversationReviewContext } from "@/lib/reviews";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
 type LakosChatPageProps = {
@@ -35,6 +37,8 @@ export default async function LakosChatPage({ params }: LakosChatPageProps) {
     notFound();
   }
 
+  const reviewContext = await getConversationReviewContext(id, user.id);
+
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
       <PageContainer narrow>
@@ -51,6 +55,18 @@ export default async function LakosChatPage({ params }: LakosChatPageProps) {
           </h1>
           <p className="mt-1 text-sm text-zinc-500">{header.otherPartyName}</p>
         </div>
+
+        {reviewContext && (
+          <ChatJobActions
+            jobId={reviewContext.jobId}
+            craftsmanId={reviewContext.craftsmanId}
+            craftsmanName={header.otherPartyName}
+            canCompleteJob={reviewContext.canCompleteJob}
+            canSubmitReview={reviewContext.canSubmitReview}
+            jobCompleted={reviewContext.jobStatus === "completed"}
+            hasReview={Boolean(reviewContext.existingReviewId)}
+          />
+        )}
 
         <ChatRoom
           conversationId={id}

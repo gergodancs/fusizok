@@ -8,19 +8,22 @@ import {
 } from "@/app/actions/craftsman-profile";
 import { BUDAPEST_DISTRICTS } from "@/lib/budapest-districts";
 import { JOB_CATEGORIES } from "@/lib/job-categories";
-import { btnPrimaryClassName, labelClassName } from "@/lib/ui-classes";
+import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
+import { btnPrimaryClassName, inputClassName, labelClassName } from "@/lib/ui-classes";
 
 const initialState: CraftsmanProfileFormState = {};
 
 type CraftsmanProfileFormProps = {
   defaultDistricts?: string[];
   defaultCategories?: string[];
+  defaultBio?: string | null;
   showSuccessBanner?: boolean;
 };
 
 export function CraftsmanProfileForm({
   defaultDistricts = [],
   defaultCategories = [],
+  defaultBio = null,
   showSuccessBanner = false,
 }: CraftsmanProfileFormProps) {
   const router = useRouter();
@@ -54,6 +57,28 @@ export function CraftsmanProfileForm({
           {state.error}
         </div>
       )}
+
+      <div className="space-y-2">
+        <label htmlFor="craftsman-bio" className={labelClassName}>
+          Bemutatkozás
+        </label>
+        <p className="text-sm text-zinc-500">
+          Írj pár mondatot magadról, tapasztalataidról – a lakosok a pályázatod
+          után látják ezt a profilodon.
+        </p>
+        <textarea
+          id="craftsman-bio"
+          name="bio"
+          rows={5}
+          maxLength={CRAFTSMAN_BIO_MAX_LENGTH}
+          defaultValue={defaultBio ?? ""}
+          placeholder="Pl. 10 éve foglalkozom csempézéssel, precíz és tiszta munkát vállalok…"
+          className={inputClassName}
+        />
+        <p className="text-xs text-zinc-600">
+          Max. {CRAFTSMAN_BIO_MAX_LENGTH} karakter
+        </p>
+      </div>
 
       <div className="space-y-2">
         <span className={labelClassName}>Milyen munkákat vállalsz?</span>

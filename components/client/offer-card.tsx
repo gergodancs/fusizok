@@ -1,5 +1,8 @@
+import Link from "next/link";
 import { rejectBid } from "@/app/actions/reject-bid";
 import { ShareContactButton } from "@/components/client/share-contact-button";
+import { UserAvatar } from "@/components/profile/user-avatar";
+import { StarRating } from "@/components/reviews/star-rating";
 import type { ClientBidOffer } from "@/lib/client-bids";
 import { getBidActivityStatusLabel } from "@/lib/status-labels";
 import { cardClassName } from "@/lib/ui-classes";
@@ -17,11 +20,26 @@ export function OfferCard({ offer }: OfferCardProps) {
   return (
     <article className={`${cardClassName} p-5`}>
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="font-bold text-zinc-100">{offer.job_title}</h3>
-          <p className="mt-1 text-sm text-amber-400">
-            {offer.craftsman_name ?? "Fusizó"}
-          </p>
+        <div className="flex gap-3">
+          <UserAvatar
+            name={offer.craftsman_name}
+            avatarUrl={offer.craftsman_avatar_url}
+            size="md"
+          />
+          <div>
+            <h3 className="font-bold text-zinc-100">{offer.job_title}</h3>
+            <p className="mt-1 text-sm text-amber-400">
+              {offer.craftsman_name ?? "Fusizó"}
+            </p>
+            {offer.craftsman_avg_rating !== null && (
+              <div className="mt-1 flex items-center gap-2">
+                <StarRating rating={offer.craftsman_avg_rating} size="sm" />
+                <span className="text-xs text-zinc-500">
+                  ({offer.craftsman_review_count})
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <span
           className={`rounded-full px-2.5 py-1 text-xs ${
@@ -52,6 +70,15 @@ export function OfferCard({ offer }: OfferCardProps) {
         {offer.message && (
           <p className="italic text-zinc-500">&bdquo;{offer.message}&ldquo;</p>
         )}
+      </div>
+
+      <div className="mt-4">
+        <Link
+          href={`/lakos/fusizo/${offer.craftsman_id}?bid=${offer.id}`}
+          className="inline-flex text-sm font-medium text-amber-400 hover:text-amber-300"
+        >
+          Profil, galéria és értékelések →
+        </Link>
       </div>
 
       <div className="mt-5 space-y-3">

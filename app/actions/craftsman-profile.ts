@@ -1,5 +1,6 @@
 "use server";
 
+import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
 import { isBudapestDistrict } from "@/lib/budapest-districts";
 import { revalidatePath } from "next/cache";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
@@ -39,6 +40,15 @@ export async function updateCraftsmanProfile(
     return { error: "Válassz legalább egy kerületet." };
   }
 
+  const bioRaw = (formData.get("bio") as string) ?? "";
+  const bio = bioRaw.trim() || null;
+
+  if (bio && bio.length > CRAFTSMAN_BIO_MAX_LENGTH) {
+    return {
+      error: `A bemutatkozás legfeljebb ${CRAFTSMAN_BIO_MAX_LENGTH} karakter lehet.`,
+    };
+  }
+
   const supabase = await createClient();
 
   const { error } = await supabase.from("craftsman_profiles").upsert(
@@ -46,6 +56,7 @@ export async function updateCraftsmanProfile(
       id: user.id,
       profession: selectedCategories.join(", "),
       coverage_zip_codes: selectedDistricts,
+      bio,
     },
     { onConflict: "id" },
   );
@@ -57,5 +68,6 @@ export async function updateCraftsmanProfile(
 
   revalidatePath("/szaki");
   revalidatePath("/szaki/profil");
+  revalidatePath(`/lakos/fusizo/${user.id}`);
   return { success: true };
 }
