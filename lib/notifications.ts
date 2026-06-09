@@ -1,3 +1,4 @@
+import { countUnseenOpenJobsForCraftsman } from "@/lib/craftsman";
 import { createClient } from "@/lib/supabase/server";
 
 export type ClientNavCounts = {
@@ -6,8 +7,9 @@ export type ClientNavCounts = {
 };
 
 export type CraftsmanNavCounts = {
-  unreadMessages: number;
-  newContactShares: number;
+  newOpenJobs: number;
+  newActivity: number;
+  chatNotifications: number;
 };
 
 async function countUnreadMessages(
@@ -107,18 +109,27 @@ export async function getCraftsmanNavCounts(
     convIds = (conversations ?? []).map((c) => c.id);
   }
 
-  const { count } = await supabase
+  const { count: newActivity } = await supabase
+    .from("job_bids")
+    .select("id", { count: "exact", head: true })
+    .eq("craftsman_id", userId)
+    .is("activity_seen_by_craftsman_at", null)
+    .or("contact_shared.eq.true,status.eq.rejected");
+
+  const { count: paymentRequired } = await supabase
     .from("job_bids")
     .select("id", { count: "exact", head: true })
     .eq("craftsman_id", userId)
     .eq("contact_shared", true)
-    .is("contact_seen_by_craftsman_at", null);
+    .eq("status", "pending_payment");
 
   const unreadMessages = await countUnreadMessages(userId, convIds);
+  const newOpenJobs = await countUnseenOpenJobsForCraftsman(userId);
 
   return {
-    unreadMessages,
-    newContactShares: count ?? 0,
+    newOpenJobs,
+    newActivity: newActivity ?? 0,
+    chatNotifications: unreadMessages + (paymentRequired ?? 0),
   };
 }
 
@@ -142,14 +153,31 @@ export async function markClientOffersViewed(clientId: string): Promise<void> {
 export async function markCraftsmanContactSharesSeen(
   craftsmanId: string,
 ): Promise<void> {
+  await markCraftsmanActivitySeen(craftsmanId);
+}
+
+export async function markCraftsmanActivitySeen(
+  craftsmanId: string,
+): Promise<void> {
   const supabase = await createClient();
+  const now = new Date().toISOString();
 
   await supabase
     .from("job_bids")
-    .update({ contact_seen_by_craftsman_at: new Date().toISOString() })
-    .eq("craftsman_id", craftsmanId)
-    .eq("contact_shared", true)
-    .is("contact_seen_by_craftsman_at", null);
+    .update({
+      activity_seen_by_craftsman_at: now,
+      contact_seen_by_craftsman_at: now,
+    })
+    .eq("craftsman_id", craftsmanId);
+}
+
+export async function markOpenJobsSeen(craftsmanId: string): Promise<void> {
+  const supabase = await createClient();
+
+  await supabase
+    .from("craftsman_profiles")
+    .update({ open_jobs_seen_at: new Date().toISOString() })
+    .eq("id", craftsmanId);
 }
 
 export async function markConversationRead(

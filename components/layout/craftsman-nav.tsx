@@ -6,18 +6,23 @@ import { NavBadge } from "@/components/layout/nav-badge";
 import type { CraftsmanNavCounts } from "@/lib/notifications";
 
 const links = [
-  { href: "/szaki", label: "Nyitott munkák", exact: true, badgeKey: null },
+  {
+    href: "/szaki",
+    label: "Nyitott munkák",
+    exact: true,
+    badgeKey: "newOpenJobs" as const,
+  },
   {
     href: "/szaki/aktivitas",
     label: "Aktivitásom",
     exact: false,
-    badgeKey: "newContactShares" as const,
+    badgeKey: "newActivity" as const,
   },
   {
     href: "/szaki/uzenetek",
     label: "Chatek",
     exact: false,
-    badgeKey: "unreadMessages" as const,
+    badgeKey: "chatNotifications" as const,
   },
   { href: "/szaki/profil", label: "Profil", exact: false, badgeKey: null },
 ];

@@ -128,6 +128,14 @@ export async function initiateShareContact(
 
   console.log("[shareContact] RPC eredmény:", result);
 
+  await supabase
+    .from("job_bids")
+    .update({
+      activity_seen_by_craftsman_at: null,
+      contact_seen_by_craftsman_at: null,
+    })
+    .eq("id", bidId);
+
   const conversationId = result.conversation_id;
   if (!conversationId) {
     return { ok: false, error: "A chat indítása sikertelen." };

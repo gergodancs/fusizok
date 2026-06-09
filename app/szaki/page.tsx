@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getMatchedJobsForCraftsman } from "@/lib/craftsman";
 import { getCraftsmanProfileForEdit } from "@/lib/craftsman-profile";
+import { markOpenJobsSeen } from "@/lib/notifications";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default async function SzakiPage() {
   }
 
   const { jobs } = await getMatchedJobsForCraftsman(user.id);
+  await markOpenJobsSeen(user.id);
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">

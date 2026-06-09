@@ -4,7 +4,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanActivity } from "@/lib/bids";
 import type { BidWithJob } from "@/lib/bids";
-import { markCraftsmanContactSharesSeen } from "@/lib/notifications";
+import { markCraftsmanActivitySeen } from "@/lib/notifications";
 import { RealtimeRefresh } from "@/components/realtime/realtime-refresh";
 import {
   getBidActivityStatusLabel,
@@ -109,7 +109,7 @@ function ActivitySection({
 
 export default async function SzakiAktivitasPage() {
   const { user } = await requireCraftsman("/szaki/aktivitas");
-  await markCraftsmanContactSharesSeen(user.id);
+  await markCraftsmanActivitySeen(user.id);
   const activity = await getCraftsmanActivity(user.id);
 
   return (

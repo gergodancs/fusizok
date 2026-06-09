@@ -42,7 +42,10 @@ export async function rejectBid(bidId: string) {
 
   const { error: updateError } = await supabase
     .from("job_bids")
-    .update({ status: "rejected" })
+    .update({
+      status: "rejected",
+      activity_seen_by_craftsman_at: null,
+    })
     .eq("id", bidId);
 
   if (updateError) {

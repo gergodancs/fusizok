@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { JobBidForm } from "@/components/jobs/job-bid-form";
 import { JobImageGallery } from "@/components/jobs/job-image-gallery";
 import { PageContainer } from "@/components/layout/page-container";
+import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
+import { getJobBidStats } from "@/lib/job-bid-stats";
 import { createClient } from "@/lib/supabase/server";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -34,6 +36,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
     notFound();
   }
 
+  const bidStats = await getJobBidStats(job.id);
   const imageUrls = (job.image_urls as string[] | null) ?? [];
 
   return (
@@ -55,6 +58,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
               <> · Határidő: {job.required_completion_time}</>
             )}
           </p>
+          <JobMarketStats stats={bidStats} className="mt-3" />
           <p className="mt-4 whitespace-pre-wrap text-zinc-400">
             {job.description}
           </p>

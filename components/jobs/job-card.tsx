@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { JobMarketStats } from "@/components/jobs/job-market-stats";
+import type { JobWithMarketStats } from "@/lib/craftsman";
 import { JOB_STATUS_LABELS } from "@/lib/status-labels";
 import type { Job } from "@/lib/types/job";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
@@ -11,7 +13,7 @@ const statusStyles: Record<Job["status"], string> = {
 };
 
 type JobCardProps = {
-  job: Job;
+  job: JobWithMarketStats;
 };
 
 export function JobCard({ job }: JobCardProps) {
@@ -31,6 +33,14 @@ export function JobCard({ job }: JobCardProps) {
             {JOB_STATUS_LABELS[job.status]}
           </span>
         </div>
+
+        <JobMarketStats
+          stats={{
+            bidCount: job.bidCount,
+            contactSharedCount: job.contactSharedCount,
+          }}
+          className="mb-3"
+        />
 
         <div className="mb-4 flex flex-wrap gap-2">
           <span className="inline-flex items-center rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400">

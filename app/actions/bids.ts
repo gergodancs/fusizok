@@ -72,8 +72,9 @@ export async function createJobBid(
     return { error: "A pályázat mentése sikertelen." };
   }
 
+  revalidatePath("/szaki", "layout");
   revalidatePath("/szaki/aktivitas");
-  revalidatePath("/lakos/ajanlatok");
+  revalidatePath("/lakos/ajanlatok", "layout");
 
   return { success: true };
 }

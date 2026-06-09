@@ -1,7 +1,11 @@
 import { isBudapestDistrict } from "@/lib/budapest-districts";
 import { createClient } from "@/lib/supabase/server";
 import type { CraftsmanProfile } from "@/lib/types/profile";
+import type { JobBidStats } from "@/lib/job-bid-stats";
+import { getJobBidStatsByJobIds } from "@/lib/job-bid-stats";
 import type { Job } from "@/lib/types/job";
+
+export type JobWithMarketStats = Job & JobBidStats;
 
 export function normalizeProfessions(
   profession: string | string[] | null | undefined,
@@ -30,7 +34,7 @@ export function normalizeDistricts(
 }
 
 export type MatchedJobsResult = {
-  jobs: Job[];
+  jobs: JobWithMarketStats[];
   craftsmanProfile: CraftsmanProfile | null;
   professions: string[];
   districts: string[];
@@ -100,7 +104,26 @@ export async function getMatchedJobsForCraftsman(
 
   const bidJobIds = new Set((existingBids ?? []).map((b) => b.job_id));
 
-  const jobs = ((data ?? []) as Job[]).filter((job) => !bidJobIds.has(job.id));
+  const matchedJobs = ((data ?? []) as Job[]).filter(
+    (job) => !bidJobIds.has(job.id),
+  );
+
+  const statsByJobId = await getJobBidStatsByJobIds(
+    matchedJobs.map((job) => job.id),
+  );
+
+  const jobs: JobWithMarketStats[] = matchedJobs.map((job) => {
+    const stats = statsByJobId.get(job.id) ?? {
+      bidCount: 0,
+      contactSharedCount: 0,
+    };
+
+    return {
+      ...job,
+      bidCount: stats.bidCount,
+      contactSharedCount: stats.contactSharedCount,
+    };
+  });
 
   return {
     jobs,
@@ -108,4 +131,28 @@ export async function getMatchedJobsForCraftsman(
     professions,
     districts,
   };
+}
+
+/** Új, még nem látott nyitott munkák száma (menü badge). */
+export async function countUnseenOpenJobsForCraftsman(
+  userId: string,
+): Promise<number> {
+  const supabase = await createClient();
+
+  const { data: craftsmanProfile } = await supabase
+    .from("craftsman_profiles")
+    .select("open_jobs_seen_at")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const seenAt = craftsmanProfile?.open_jobs_seen_at;
+  const { jobs } = await getMatchedJobsForCraftsman(userId);
+
+  if (!seenAt) {
+    return jobs.length;
+  }
+
+  return jobs.filter(
+    (job) => job.created_at && job.created_at > seenAt,
+  ).length;
 }
