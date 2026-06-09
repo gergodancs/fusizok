@@ -112,10 +112,6 @@ export async function createCraftsmanChatCheckoutSession(
         },
         return_url: `${appUrl}/szaki/uzenetek/${conversationId}?payment_return=1&bid_id=${bid.id}&session_id={CHECKOUT_SESSION_ID}`,
       },
-      {
-        // Az összeg a kulcsban: korábbi (hibás) kérések ne cache-elődjenek vissza.
-        idempotencyKey: `craftsman-chat-v2-${bid.id}-${user.id}-${priceValidation.unitAmount}`,
-      },
     );
 
     if (!session.client_secret) {
@@ -141,11 +137,18 @@ export async function createCraftsmanChatCheckoutSession(
   } catch (err) {
     console.error("[createCraftsmanChatCheckoutSession] Stripe hiba:", err);
 
-    const stripeErr = err as { code?: string };
+    const stripeErr = err as { code?: string; type?: string };
     if (stripeErr.code === "amount_too_small") {
       return {
         ok: false,
         error: `A fizetési összeg túl alacsony (minimum ${STRIPE_HUF_MIN_FORINTS} Ft). Ellenőrizd a STRIPE_CONTACT_UNLOCK_PRICE_HUF beállítást (ajánlott: 990).`,
+      };
+    }
+
+    if (stripeErr.type === "StripeIdempotencyError") {
+      return {
+        ok: false,
+        error: "A fizetés indítása ütközött egy korábbi próbálkozással. Frissítsd az oldalt, majd próbáld újra.",
       };
     }
 
