@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { notifyUser } from "@/app/utils/notifications";
+import { buildBidRejectedEmailHtml } from "@/lib/notification-templates";
+import { getAppBaseUrl } from "@/lib/stripe/config";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -53,7 +55,8 @@ export async function rejectBid(bidId: string) {
     throw new Error("Az elutasítás sikertelen.");
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getAppBaseUrl();
+  const activityUrl = `${appUrl}/szaki/aktivitas`;
 
   console.log("[rejectBid] Értesítés küldése a szakinak:", bid.craftsman_id);
 
@@ -62,9 +65,13 @@ export async function rejectBid(bidId: string) {
       userId: bid.craftsman_id,
       title: "Pályázat elutasítva",
       body: `${clientName} elutasította a(z) „${job.title}” munkára adott ajánlatodat.`,
-      url: `${appUrl}/szaki/aktivitas`,
+      url: activityUrl,
       emailSubject: `Pályázat elutasítva – ${job.title}`,
-      emailHtml: `<p>Szia!</p><p><strong>${clientName}</strong> elutasította a(z) <strong>${job.title}</strong> munkára adott pályázatodat.</p><p><a href="${appUrl}/szaki/aktivitas">Megnyitás az Aktivitásom oldalon</a></p>`,
+      emailHtml: buildBidRejectedEmailHtml({
+        clientName,
+        jobTitle: job.title,
+        activityUrl,
+      }),
       tag: `bid-rejected-${bidId}`,
     });
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { notifyUser } from "@/app/utils/notifications";
+import { buildBidAcceptedEmailHtml } from "@/lib/notification-templates";
 import { getAppBaseUrl } from "@/lib/stripe/config";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
 import type {
@@ -56,14 +57,21 @@ async function sendCraftsmanActivationNotification(params: {
     ? `${params.clientName} megosztotta veled a kapcsolatot a(z) „${params.jobTitle}” munkánál. A válaszadáshoz egyszeri díj szükséges.`
     : `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`;
 
+  const chatUrl = `${appUrl}/szaki/uzenetek/${params.conversationId}`;
+
   try {
     const notifyResult = await notifyUser({
       userId: params.craftsmanId,
       title,
       body,
-      url: `${appUrl}/szaki/uzenetek/${params.conversationId}`,
+      url: chatUrl,
       emailSubject: `${title} – ${params.jobTitle}`,
-      emailHtml: `<p>Szia!</p><p>${body}</p><p><a href="${appUrl}/szaki/uzenetek/${params.conversationId}">Chat megnyitása</a></p>`,
+      emailHtml: buildBidAcceptedEmailHtml({
+        clientName: params.clientName,
+        jobTitle: params.jobTitle,
+        chatUrl,
+        paymentRequired: params.paymentRequired,
+      }),
       tag: `bid-accepted-${params.bidId}`,
     });
     console.log("[shareContact] Értesítés eredménye:", notifyResult);

@@ -1,4 +1,6 @@
 import webpush from "web-push";
+import { sendEmail } from "@/lib/email";
+import { getAppBaseUrl } from "@/lib/stripe/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export type UserNotificationPayload = {
@@ -26,13 +28,6 @@ type PushSubscriptionRow = {
   p256dh: string;
   auth: string;
 };
-
-function getAppUrl(): string {
-  return (
-    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") ??
-    "http://localhost:3000"
-  );
-}
 
 function isPushConfigured(): boolean {
   return Boolean(
@@ -92,47 +87,6 @@ async function getUserEmail(userId: string): Promise<string | null> {
   } catch (err) {
     console.error("[notify] getUserEmail exception:", err);
     return null;
-  }
-}
-
-async function sendEmail(
-  to: string,
-  subject: string,
-  html: string,
-): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from =
-    process.env.RESEND_FROM_EMAIL ?? "fusizok.hu <onboarding@resend.dev>";
-
-  if (!apiKey) {
-    console.info("[notify] [e-mail mock – RESEND_API_KEY nincs beállítva]", {
-      to,
-      subject,
-    });
-    return false;
-  }
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ from, to, subject, html }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("[notify] Resend API hiba:", response.status, text);
-      return false;
-    }
-
-    console.log("[notify] E-mail elküldve:", to, subject);
-    return true;
-  } catch (err) {
-    console.error("[notify] sendEmail exception:", err);
-    return false;
   }
 }
 
@@ -198,7 +152,7 @@ async function sendPushNotifications(
   const pushPayload = JSON.stringify({
     title: payload.title,
     body: payload.body,
-    url: payload.url ?? getAppUrl(),
+    url: payload.url ?? getAppBaseUrl(),
     tag: payload.tag,
   });
 
@@ -281,10 +235,14 @@ export async function notifyUser(
     const subject = payload.emailSubject ?? payload.title;
     const html =
       payload.emailHtml ??
-      `<p>${payload.body}</p><p><a href="${payload.url ?? getAppUrl()}">Megnyitás a fusizok.hu-n</a></p>`;
+      `<p>${payload.body}</p><p><a href="${payload.url ?? getAppBaseUrl()}">Megnyitás a Fusizók-on</a></p>`;
 
     if (email) {
-      result.emailSent = await sendEmail(email, subject, html);
+      const emailResult = await sendEmail({ to: email, subject, html });
+      result.emailSent = emailResult.ok;
+      if (!emailResult.ok && emailResult.error) {
+        result.errors.push(emailResult.error);
+      }
     } else {
       result.errors.push("Nincs e-mail cím vagy hiányzik a service role kulcs");
     }

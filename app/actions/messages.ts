@@ -2,6 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { notifyUser } from "@/app/utils/notifications";
+import { buildNewMessageEmailHtml } from "@/lib/notification-templates";
+import { getAppBaseUrl } from "@/lib/stripe/config";
 import {
   canCraftsmanSendInConversation,
   canUserAccessConversation,
@@ -85,7 +87,7 @@ export async function sendMessage(
 
   const senderProfile = await getUserProfile(user.id);
   const senderName = senderProfile?.full_name ?? "Valaki";
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const appUrl = getAppBaseUrl();
   const chatPath =
     recipientId === conversation.client_id
       ? `/lakos/uzenetek/${conversationId}`
@@ -95,13 +97,18 @@ export async function sendMessage(
     content.length > 120 ? `${content.slice(0, 117)}…` : content;
 
   try {
+    const chatUrl = `${appUrl}${chatPath}`;
     const notifyResult = await notifyUser({
       userId: recipientId,
       title: "Új üzenet",
       body: `Új üzeneted érkezett tőle: ${senderName} – „${preview}"`,
-      url: `${appUrl}${chatPath}`,
+      url: chatUrl,
       emailSubject: `Új üzenet – ${senderName}`,
-      emailHtml: `<p>Szia!</p><p><strong>${senderName}</strong> üzenetet küldött neked:</p><blockquote>${preview}</blockquote><p><a href="${appUrl}${chatPath}">Üzenet megnyitása</a></p>`,
+      emailHtml: buildNewMessageEmailHtml({
+        senderName,
+        preview,
+        chatUrl,
+      }),
       tag: `chat-${conversationId}`,
     });
 

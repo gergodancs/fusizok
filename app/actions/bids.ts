@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { isAvailabilityDuration } from "@/lib/availability-options";
-import { getSessionUser } from "@/lib/auth/session";
+import { notifyUser } from "@/app/utils/notifications";
+import { getSessionUser, getUserProfile } from "@/lib/auth/session";
+import { buildNewBidEmailHtml } from "@/lib/notification-templates";
+import { getAppBaseUrl } from "@/lib/stripe/config";
 import { createClient } from "@/lib/supabase/server";
 
 export type BidFormState = {
@@ -45,7 +48,7 @@ export async function createJobBid(
 
   const { data: job, error: jobError } = await supabase
     .from("jobs")
-    .select("id, client_id, status")
+    .select("id, client_id, status, title")
     .eq("id", jobId)
     .eq("status", "open")
     .maybeSingle();
@@ -70,6 +73,29 @@ export async function createJobBid(
     }
     console.error("Pályázat mentési hiba:", bidError.message);
     return { error: "A pályázat mentése sikertelen." };
+  }
+
+  const craftsmanProfile = await getUserProfile(user.id);
+  const craftsmanName = craftsmanProfile?.full_name ?? "Egy fusizó";
+  const appUrl = getAppBaseUrl();
+  const offersUrl = `${appUrl}/lakos/ajanlatok`;
+
+  try {
+    await notifyUser({
+      userId: job.client_id,
+      title: "Új pályázat",
+      body: `${craftsmanName} pályázott a(z) „${job.title}” munkádra.`,
+      url: offersUrl,
+      emailSubject: `Új pályázat – ${job.title}`,
+      emailHtml: buildNewBidEmailHtml({
+        craftsmanName,
+        jobTitle: job.title,
+        offersUrl,
+      }),
+      tag: `new-bid-${jobId}`,
+    });
+  } catch (notifyErr) {
+    console.error("[createJobBid] Értesítés exception:", notifyErr);
   }
 
   revalidatePath("/szaki", "layout");

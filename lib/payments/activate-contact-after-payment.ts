@@ -1,4 +1,8 @@
 import { notifyUser } from "@/app/utils/notifications";
+import {
+  buildBidAcceptedEmailHtml,
+  buildChatUnlockedEmailHtml,
+} from "@/lib/notification-templates";
 import { getAppBaseUrl } from "@/lib/stripe/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -77,6 +81,8 @@ export async function activateContactAfterPayment(params: {
     const appUrl = getAppBaseUrl();
     const isCraftsmanUnlock =
       params.metadata.payment_type === "craftsman_chat_unlock";
+    const chatUrl = `${appUrl}/szaki/uzenetek/${result.conversation_id}`;
+
     try {
       const notifyResult = await notifyUser({
         userId: result.craftsman_id,
@@ -86,9 +92,21 @@ export async function activateContactAfterPayment(params: {
         body: isCraftsmanUnlock
           ? `Sikeres fizetés – most már válaszolhatsz a(z) „${params.jobTitle}” munkához tartozó chatben.`
           : `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`,
-        url: `${appUrl}/szaki/uzenetek/${result.conversation_id}`,
-        emailSubject: `Ajánlat elfogadva – ${params.jobTitle}`,
-        emailHtml: `<p>Szia!</p><p><strong>Gratulálunk!</strong> ${params.clientName} elfogadta az ajánlatodat a(z) <strong>${params.jobTitle}</strong> munkára, és elindult a chat!</p><p><a href="${appUrl}/szaki/uzenetek/${result.conversation_id}">Chat megnyitása</a></p>`,
+        url: chatUrl,
+        emailSubject: isCraftsmanUnlock
+          ? `Chat aktiválva – ${params.jobTitle}`
+          : `Ajánlat elfogadva – ${params.jobTitle}`,
+        emailHtml: isCraftsmanUnlock
+          ? buildChatUnlockedEmailHtml({
+              jobTitle: params.jobTitle,
+              chatUrl,
+            })
+          : buildBidAcceptedEmailHtml({
+              clientName: params.clientName,
+              jobTitle: params.jobTitle,
+              chatUrl,
+              paymentRequired: false,
+            }),
         tag: `bid-accepted-${params.bidId}`,
       });
       console.log("[stripe-webhook] Értesítés eredménye:", notifyResult);
