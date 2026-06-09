@@ -76,6 +76,13 @@ export async function createCraftsmanChatCheckoutSession(
   try {
     const stripe = getStripeServerClient();
 
+    console.log("[createCraftsmanChatCheckoutSession] Stripe session indítás", {
+      bidId,
+      priceHuf,
+      stripeUnitAmount: priceValidation.unitAmount,
+      envPrice: process.env.STRIPE_CONTACT_UNLOCK_PRICE_HUF ?? "(nincs)",
+    });
+
     const session = await stripe.checkout.sessions.create(
       {
         mode: "payment",
@@ -103,7 +110,8 @@ export async function createCraftsmanChatCheckoutSession(
         return_url: `${appUrl}/szaki/uzenetek/${conversationId}?payment_return=1&bid_id=${bid.id}`,
       },
       {
-        idempotencyKey: `craftsman-chat-${bid.id}-${user.id}`,
+        // Az összeg a kulcsban: korábbi (hibás) kérések ne cache-elődjenek vissza.
+        idempotencyKey: `craftsman-chat-v2-${bid.id}-${user.id}-${priceValidation.unitAmount}`,
       },
     );
 
