@@ -15,7 +15,6 @@ type CraftsmanChatUnlockProps = {
   conversationId: string;
   jobTitle: string;
   priceHuf: number;
-  payerEmail: string;
 };
 
 function Spinner() {
@@ -32,7 +31,6 @@ export function CraftsmanChatUnlock({
   conversationId,
   jobTitle,
   priceHuf,
-  payerEmail,
 }: CraftsmanChatUnlockProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -126,7 +124,6 @@ export function CraftsmanChatUnlock({
           craftsmanName="Chat válasz jogosultság"
           clientSecret={paymentModal.clientSecret}
           checkoutSessionId={paymentModal.sessionId}
-          payerEmail={payerEmail}
           onClose={() => setPaymentModal(null)}
           onSuccess={() => void handlePaymentSuccess()}
           onPaymentConfirmed={async (sessionId) => {
