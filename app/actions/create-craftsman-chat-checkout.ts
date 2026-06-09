@@ -89,7 +89,6 @@ export async function createCraftsmanChatCheckoutSession(
       {
         mode: "payment",
         ui_mode: "elements",
-        redirect_on_completion: "never",
         line_items: [
           {
             price_data: {
