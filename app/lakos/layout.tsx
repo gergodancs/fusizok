@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { LakosNav } from "@/components/layout/lakos-nav";
 import { PushNotificationPrompt } from "@/components/push/push-notification-prompt";
 import { getAuthContext } from "@/lib/auth/session";
-import { getClientNavCounts } from "@/lib/notifications";
+import { getClientLayoutSnapshot } from "@/lib/nav/snapshot";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export default async function LakosLayout({
 
   const counts =
     user && profile?.role === "client"
-      ? await getClientNavCounts(user.id)
+      ? await getClientLayoutSnapshot()
       : { unreadMessages: 0, newOffers: 0 };
 
   return (

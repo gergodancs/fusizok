@@ -1,11 +1,14 @@
 import type { MetadataRoute } from "next";
+import { listOpenJobIdsForSitemap } from "@/lib/jobs/job-listing";
 import { getMetadataBaseUrl } from "@/lib/seo/site-url";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const dynamic = "force-dynamic";
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = getMetadataBaseUrl();
   const lastModified = new Date();
 
-  return [
+  const staticPages: MetadataRoute.Sitemap = [
     {
       url: baseUrl,
       lastModified,
@@ -25,4 +28,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.5,
     },
   ];
+
+  const openJobs = await listOpenJobIdsForSitemap();
+  const jobPages: MetadataRoute.Sitemap = openJobs.map((job) => ({
+    url: `${baseUrl}/hirdetes/${job.id}`,
+    lastModified: new Date(job.created_at),
+    changeFrequency: "daily" as const,
+    priority: 0.8,
+  }));
+
+  return [...staticPages, ...jobPages];
 }

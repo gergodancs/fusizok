@@ -52,7 +52,7 @@ export async function notifyMatchingCraftsmenForJob(
   }
 
   const locationLabel = formatJobLocation(job);
-  const jobUrl = `${getAppBaseUrl()}/szaki/palyaz/${job.id}`;
+  const jobUrl = `${getAppBaseUrl()}/hirdetes/${job.id}`;
   const jobSubs = job.sub_categories ?? [];
   const categoryLabel = getMainCategoryLabel(job.category);
 
@@ -95,7 +95,7 @@ export async function notifyMatchingCraftsmenForJob(
       userId: craftsman.id,
       title: "Új munka a közeledben",
       body: `${job.title} – ${locationLabel}`,
-      url: `/szaki/palyaz/${job.id}`,
+      url: `/hirdetes/${job.id}`,
       emailSubject: `Új meló a közeledben: ${job.title}`,
       emailHtml: buildNewNearbyJobEmailHtml({
         jobTitle: job.title,

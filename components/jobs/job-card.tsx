@@ -22,7 +22,7 @@ type JobCardProps = {
 };
 
 export function JobCard({ job }: JobCardProps) {
-  const detailHref = `/szaki/palyaz/${job.id}`;
+  const detailHref = `/hirdetes/${job.id}`;
   const imageCount = job.image_urls?.length ?? 0;
 
   return (

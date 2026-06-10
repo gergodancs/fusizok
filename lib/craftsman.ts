@@ -177,26 +177,21 @@ export async function getMatchedJobsForCraftsman(
   };
 }
 
-/** Új, még nem látott nyitott munkák száma (menü badge). */
+/** Új, még nem látott nyitott munkák száma (menü badge) – könnyű DB RPC. */
 export async function countUnseenOpenJobsForCraftsman(
   userId: string,
 ): Promise<number> {
   const supabase = await createClient();
 
-  const { data: craftsmanProfile } = await supabase
-    .from("craftsman_profiles")
-    .select("open_jobs_seen_at")
-    .eq("id", userId)
-    .maybeSingle();
+  const { data, error } = await supabase.rpc(
+    "count_unseen_open_jobs_for_craftsman",
+    { p_craftsman_id: userId },
+  );
 
-  const seenAt = craftsmanProfile?.open_jobs_seen_at;
-  const { jobs } = await getMatchedJobsForCraftsman(userId);
-
-  if (!seenAt) {
-    return jobs.length;
+  if (error) {
+    console.error("[craftsman] Új munkák badge RPC hiba:", error.message);
+    return 0;
   }
 
-  return jobs.filter(
-    (job) => job.created_at && job.created_at > seenAt,
-  ).length;
+  return Number(data ?? 0);
 }

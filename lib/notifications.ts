@@ -1,4 +1,3 @@
-import { countUnseenOpenJobsForCraftsman } from "@/lib/craftsman";
 import { createClient } from "@/lib/supabase/server";
 
 export type ClientNavCounts = {
@@ -12,77 +11,43 @@ export type CraftsmanNavCounts = {
   chatNotifications: number;
 };
 
-async function countUnreadMessages(
-  userId: string,
-  conversationIds: string[],
-): Promise<number> {
-  if (conversationIds.length === 0) return 0;
-
-  const supabase = await createClient();
-
-  const { data: reads } = await supabase
-    .from("conversation_reads")
-    .select("conversation_id, last_read_at")
-    .eq("user_id", userId)
-    .in("conversation_id", conversationIds);
-
-  const readMap = new Map(
-    (reads ?? []).map((r) => [r.conversation_id, r.last_read_at]),
-  );
-
-  let total = 0;
-
-  for (const convId of conversationIds) {
-    const lastRead = readMap.get(convId) ?? "1970-01-01T00:00:00Z";
-
-    const { count, error } = await supabase
-      .from("messages")
-      .select("id", { count: "exact", head: true })
-      .eq("conversation_id", convId)
-      .neq("sender_id", userId)
-      .gt("created_at", lastRead);
-
-    if (!error && count) {
-      total += count;
-    }
-  }
-
-  return total;
-}
-
 export async function getClientNavCounts(
   userId: string,
 ): Promise<ClientNavCounts> {
   const supabase = await createClient();
-
-  const { data: conversations } = await supabase
-    .from("conversations")
-    .select("id")
-    .eq("client_id", userId);
-
-  const convIds = (conversations ?? []).map((c) => c.id);
 
   const { data: jobs } = await supabase
     .from("jobs")
     .select("id")
     .eq("client_id", userId);
 
-  const jobIds = (jobs ?? []).map((j) => j.id);
+  const jobIds = (jobs ?? []).map((job) => job.id);
 
-  let newOffers = 0;
-  if (jobIds.length > 0) {
-    const { count } = await supabase
-      .from("job_bids")
-      .select("id", { count: "exact", head: true })
-      .in("job_id", jobIds)
-      .is("viewed_by_client_at", null);
+  const [{ data: unreadData, error: unreadError }, offersResult] =
+    await Promise.all([
+      supabase.rpc("count_unread_messages_for_user", {
+        p_user_id: userId,
+      }),
+      jobIds.length > 0
+        ? supabase
+            .from("job_bids")
+            .select("id", { count: "exact", head: true })
+            .in("job_id", jobIds)
+            .is("viewed_by_client_at", null)
+        : Promise.resolve({ count: 0, error: null }),
+    ]);
 
-    newOffers = count ?? 0;
+  if (unreadError) {
+    console.error("[notify] Olvasatlan üzenet RPC hiba:", unreadError.message);
+  }
+  if (offersResult.error) {
+    console.error("[notify] Új ajánlat számláló hiba:", offersResult.error.message);
   }
 
-  const unreadMessages = await countUnreadMessages(userId, convIds);
-
-  return { unreadMessages, newOffers };
+  return {
+    unreadMessages: Number(unreadData ?? 0),
+    newOffers: offersResult.count ?? 0,
+  };
 }
 
 export async function getCraftsmanNavCounts(
@@ -90,46 +55,52 @@ export async function getCraftsmanNavCounts(
 ): Promise<CraftsmanNavCounts> {
   const supabase = await createClient();
 
-  const { data: sharedBids } = await supabase
-    .from("job_bids")
-    .select("job_id")
-    .eq("craftsman_id", userId)
-    .eq("contact_shared", true);
-
-  const sharedJobIds = (sharedBids ?? []).map((b) => b.job_id);
-
-  let convIds: string[] = [];
-  if (sharedJobIds.length > 0) {
-    const { data: conversations } = await supabase
-      .from("conversations")
-      .select("id")
+  const [
+    { data: newOpenJobs, error: openJobsError },
+    { count: newActivity, error: activityError },
+    { count: paymentRequired, error: paymentError },
+    { data: unreadMessages, error: unreadError },
+  ] = await Promise.all([
+    supabase.rpc("count_unseen_open_jobs_for_craftsman", {
+      p_craftsman_id: userId,
+    }),
+    supabase
+      .from("job_bids")
+      .select("id", { count: "exact", head: true })
       .eq("craftsman_id", userId)
-      .in("job_id", sharedJobIds);
+      .is("activity_seen_by_craftsman_at", null)
+      .or("contact_shared.eq.true,status.eq.rejected"),
+    supabase
+      .from("job_bids")
+      .select("id", { count: "exact", head: true })
+      .eq("craftsman_id", userId)
+      .eq("contact_shared", true)
+      .eq("status", "pending_payment"),
+    supabase.rpc("count_unread_messages_for_user", {
+      p_user_id: userId,
+    }),
+  ]);
 
-    convIds = (conversations ?? []).map((c) => c.id);
+  if (openJobsError) {
+    console.error("[notify] Új munkák badge RPC hiba:", openJobsError.message);
+  }
+  if (activityError) {
+    console.error("[notify] Aktivitás badge hiba:", activityError.message);
+  }
+  if (paymentError) {
+    console.error("[notify] Fizetés badge hiba:", paymentError.message);
+  }
+  if (unreadError) {
+    console.error("[notify] Olvasatlan üzenet RPC hiba:", unreadError.message);
   }
 
-  const { count: newActivity } = await supabase
-    .from("job_bids")
-    .select("id", { count: "exact", head: true })
-    .eq("craftsman_id", userId)
-    .is("activity_seen_by_craftsman_at", null)
-    .or("contact_shared.eq.true,status.eq.rejected");
-
-  const { count: paymentRequired } = await supabase
-    .from("job_bids")
-    .select("id", { count: "exact", head: true })
-    .eq("craftsman_id", userId)
-    .eq("contact_shared", true)
-    .eq("status", "pending_payment");
-
-  const unreadMessages = await countUnreadMessages(userId, convIds);
-  const newOpenJobs = await countUnseenOpenJobsForCraftsman(userId);
+  const unread = Number(unreadMessages ?? 0);
+  const payment = paymentRequired ?? 0;
 
   return {
-    newOpenJobs,
+    newOpenJobs: Number(newOpenJobs ?? 0),
     newActivity: newActivity ?? 0,
-    chatNotifications: unreadMessages + (paymentRequired ?? 0),
+    chatNotifications: unread + payment,
   };
 }
 
@@ -146,7 +117,10 @@ export async function markClientOffersViewed(clientId: string): Promise<void> {
   await supabase
     .from("job_bids")
     .update({ viewed_by_client_at: new Date().toISOString() })
-    .in("job_id", jobs.map((j) => j.id))
+    .in(
+      "job_id",
+      jobs.map((j) => j.id),
+    )
     .is("viewed_by_client_at", null);
 }
 
