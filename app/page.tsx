@@ -64,7 +64,7 @@ export default async function Home() {
         <div className="absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-orange-600/5 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24">
-          <div className="mx-auto max-w-3xl text-center">
+          <div className="mx-auto max-w-4xl text-center">
             <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-600/60 bg-black/40 px-4 py-1.5 text-sm font-medium text-zinc-200 backdrop-blur-sm">
               <Wrench
                 className="h-4 w-4 text-amber-500"
@@ -73,13 +73,17 @@ export default async function Home() {
               />
               Barkács segítség a környéken
             </p>
-            <h1 className="text-4xl font-black tracking-tight text-zinc-50 drop-shadow-lg sm:text-5xl lg:text-6xl">
-              Van egy fúród?{" "}
-              <span className="text-amber-400">Fusizz és keress!</span>
+            <h1 className="text-3xl font-black leading-tight tracking-tight text-zinc-50 drop-shadow-lg sm:text-4xl sm:leading-tight lg:text-5xl lg:leading-[1.15]">
+              Építsd a vállalkozásod,{" "}
+              <span className="text-amber-400">fusizz szabadon</span> – vagy
+              találd meg a{" "}
+              <span className="text-amber-400">tökéletes szakit</span>!
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300 drop-shadow-md">
-              A fusizok.hu a másodállásban barkácsolóknak, fusizóknak és
-              azoknak készült, akiknek csak fel kell rakni egy TV-t a falra.
+            <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-zinc-300 drop-shadow-md sm:text-lg sm:leading-relaxed">
+              A Fusizók az a hely, ahol a szakértelem találkozik a lakossági
+              igényekkel. Legyen szó egy TV felszereléséről, gyors otthoni
+              javításokról, vagy akár egy teljes lakásfelújításról – nálunk a
+              legkisebb és a legnagyobb projektek is azonnal gazdára találnak.
             </p>
 
             <PwaNotificationCta />
