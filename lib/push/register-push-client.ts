@@ -1,5 +1,5 @@
 import { savePushSubscription } from "@/app/actions/push-subscription";
-import { urlBase64ToUint8Array } from "@/lib/push/url-base64";
+import { decodeVapidPublicKey } from "@/lib/push/vapid";
 
 export type RegisterPushResult = {
   ok: boolean;
@@ -10,9 +10,9 @@ export type RegisterPushResult = {
   error?: string;
 };
 
-async function subscribeWithVapid(
+async function subscribeWithKey(
   registration: ServiceWorkerRegistration,
-  publicKey: string,
+  applicationServerKey: Uint8Array,
 ): Promise<PushSubscription> {
   const existing = await registration.pushManager.getSubscription();
 
@@ -30,18 +30,17 @@ async function subscribeWithVapid(
   try {
     return await registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+      applicationServerKey: applicationServerKey as BufferSource,
     });
   } catch (err) {
-    console.warn(
-      "[push-register] Első előfizetés sikertelen, újrapróbálás:",
-      err,
-    );
     const stale = await registration.pushManager.getSubscription();
-    if (stale) await stale.unsubscribe();
+    if (stale) {
+      await stale.unsubscribe();
+    }
+
     return registration.pushManager.subscribe({
       userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
+      applicationServerKey: applicationServerKey as BufferSource,
     });
   }
 }
@@ -70,31 +69,42 @@ export async function registerPushOnClient(
   }
 
   try {
-    const registration = await navigator.serviceWorker.register("/sw.js", {
-      scope: "/",
-    });
-    await navigator.serviceWorker.ready;
-
     const keyResponse = await fetch("/api/push/vapid-public-key");
     if (!keyResponse.ok) {
-      console.error("[push-register] VAPID API hiba:", keyResponse.status);
       return {
         ok: false,
         permission: Notification.permission,
         saved: false,
         needsLogin: false,
-        error: "A push szolgáltatás nincs konfigurálva.",
+        error: "A push értesítések nincsenek konfigurálva a szerveren.",
       };
     }
 
     const { publicKey } = (await keyResponse.json()) as { publicKey: string };
+    const applicationServerKey = decodeVapidPublicKey(publicKey);
+
+    if (!applicationServerKey) {
+      console.warn(
+        "[push-register] Érvénytelen VAPID kulcs – állítsd be a NEXT_PUBLIC_VAPID_PUBLIC_KEY és VAPID_PRIVATE_KEY párost (node scripts/generate-vapid-keys.mjs).",
+      );
+      return {
+        ok: false,
+        permission: Notification.permission,
+        saved: false,
+        needsLogin: false,
+        error: "A push értesítések nincsenek megfelelően konfigurálva.",
+      };
+    }
+
+    const registration = await navigator.serviceWorker.register("/sw.js", {
+      scope: "/",
+    });
+    await navigator.serviceWorker.ready;
 
     let permission: NotificationPermission = Notification.permission;
     if (permission === "default") {
       permission = await Notification.requestPermission();
     }
-
-    console.log("[push-register] Notification permission:", permission);
 
     if (permission !== "granted") {
       return {
@@ -109,7 +119,10 @@ export async function registerPushOnClient(
       };
     }
 
-    const subscription = await subscribeWithVapid(registration, publicKey);
+    const subscription = await subscribeWithKey(
+      registration,
+      applicationServerKey,
+    );
     const json = subscription.toJSON();
 
     if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
@@ -121,8 +134,6 @@ export async function registerPushOnClient(
         error: "Az előfizetés létrehozása sikertelen.",
       };
     }
-
-    console.log("[push-register] Push subscription létrejött:", json.endpoint);
 
     if (!saveToServer) {
       return {
@@ -139,8 +150,6 @@ export async function registerPushOnClient(
       auth: json.keys.auth,
       userAgent: navigator.userAgent,
     });
-
-    console.log("[push-register] Szerver mentés eredmény:", saveResult);
 
     if (!saveResult.ok) {
       return {
@@ -160,6 +169,22 @@ export async function registerPushOnClient(
       subscriptionId: saveResult.subscriptionId,
     };
   } catch (err) {
+    const isInvalidKey =
+      err instanceof DOMException && err.name === "InvalidAccessError";
+
+    if (isInvalidKey) {
+      console.warn(
+        "[push-register] VAPID kulcs elutasítva a böngésző által – ellenőrizd, hogy a public és private key pár együtt lett-e generálva.",
+      );
+      return {
+        ok: false,
+        permission: Notification.permission ?? "unsupported",
+        saved: false,
+        needsLogin: false,
+        error: "A push értesítések nincsenek megfelelően konfigurálva.",
+      };
+    }
+
     console.error("[push-register] Exception:", err);
     return {
       ok: false,

@@ -19,6 +19,8 @@ export type CraftsmanProfileEdit = {
   professions: string[];
   coverageAreas: CoverageArea[];
   location: CraftsmanLocationEdit;
+  /** Geokódolt bázispont a DB-ben (location_gps) – régi és új profilokhoz is. */
+  hasStoredCoordinates: boolean;
   bio: string | null;
 };
 
@@ -26,7 +28,13 @@ export function craftsmanHasServiceArea(profile: CraftsmanProfileEdit): boolean 
   if (profile.location.county && profile.location.city) {
     return true;
   }
-  return profile.coverageAreas.length > 0;
+  if (profile.coverageAreas.length > 0) {
+    return true;
+  }
+  if (profile.hasStoredCoordinates) {
+    return true;
+  }
+  return false;
 }
 
 export async function getCraftsmanProfileForEdit(
@@ -72,6 +80,7 @@ export async function getCraftsmanProfileForEdit(
       city,
       serviceRadiusKm: data?.service_radius_km ?? DEFAULT_SERVICE_RADIUS_KM,
     },
+    hasStoredCoordinates: Boolean(data?.location_gps),
     bio: data?.bio?.trim() || null,
   };
 }
@@ -88,6 +97,7 @@ function emptyProfileEdit(): CraftsmanProfileEdit {
       city: "",
       serviceRadiusKm: DEFAULT_SERVICE_RADIUS_KM,
     },
+    hasStoredCoordinates: false,
     bio: null,
   };
 }

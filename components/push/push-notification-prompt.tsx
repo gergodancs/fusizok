@@ -14,13 +14,22 @@ export function PushNotificationPrompt({ userId }: PushNotificationPromptProps) 
     if (Notification.permission === "denied") return;
 
     async function syncPushSubscription() {
+      const keyResponse = await fetch("/api/push/vapid-public-key");
+      if (!keyResponse.ok) {
+        return;
+      }
+
       const result = await registerPushOnClient(true);
-      console.log("[PushNotificationPrompt] Regisztráció:", userId, result);
+
+      if (!result.ok && result.error) {
+        console.info("[PushNotificationPrompt] Push szinkron kihagyva:", result.error);
+        return;
+      }
 
       if (!result.saved && result.ok && Notification.permission === "granted") {
-        console.warn(
-          "[PushNotificationPrompt] Engedély megvan, de a token nincs elmentve:",
-          result.error,
+        console.info(
+          "[PushNotificationPrompt] Engedély megvan, token mentés:",
+          result.error ?? "nincs bejelentkezve vagy szerver hiba",
         );
       }
     }
