@@ -30,6 +30,10 @@ const FEATURES = [
   },
 ] as const;
 
+/** Unsplash – szerszámfal / barkács (jogtiszta, ingyenes licenc). */
+const HERO_BACKGROUND_IMAGE =
+  "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&q=80&w=1600";
+
 export default async function Home() {
   const [{ user, profile }, stats] = await Promise.all([
     getAuthContext(),
@@ -47,21 +51,21 @@ export default async function Home() {
   return (
     <>
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-zinc-950" />
-        <div className="absolute -top-24 right-0 h-96 w-96 rounded-full bg-amber-500/10 blur-3xl" />
-        <div className="absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-orange-600/10 blur-3xl" />
         <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(45deg, #f59e0b 0, #f59e0b 1px, transparent 0, transparent 50%)",
-            backgroundSize: "12px 12px",
-          }}
+          className="absolute inset-0 scale-105 bg-cover bg-center bg-no-repeat grayscale blur-[2px]"
+          style={{ backgroundImage: `url("${HERO_BACKGROUND_IMAGE}")` }}
+          aria-hidden
         />
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/70 to-zinc-950 backdrop-blur-sm"
+          aria-hidden
+        />
+        <div className="absolute -top-24 right-0 h-96 w-96 rounded-full bg-amber-500/5 blur-3xl" />
+        <div className="absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-orange-600/5 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-700/80 bg-zinc-800/50 px-4 py-1.5 text-sm font-medium text-zinc-300">
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-600/60 bg-black/40 px-4 py-1.5 text-sm font-medium text-zinc-200 backdrop-blur-sm">
               <Wrench
                 className="h-4 w-4 text-amber-500"
                 strokeWidth={1.75}
@@ -69,11 +73,11 @@ export default async function Home() {
               />
               Barkács segítség a környéken
             </p>
-            <h1 className="text-4xl font-black tracking-tight text-zinc-50 sm:text-5xl lg:text-6xl">
+            <h1 className="text-4xl font-black tracking-tight text-zinc-50 drop-shadow-lg sm:text-5xl lg:text-6xl">
               Van egy fúród?{" "}
-              <span className="text-amber-500">Fusizz és keress!</span>
+              <span className="text-amber-400">Fusizz és keress!</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-400">
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-zinc-300 drop-shadow-md">
               A fusizok.hu a másodállásban barkácsolóknak, fusizóknak és
               azoknak készült, akiknek csak fel kell rakni egy TV-t a falra.
             </p>
