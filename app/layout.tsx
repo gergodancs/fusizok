@@ -3,6 +3,13 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { BetaLaunchModal } from "@/components/layout/beta-launch-modal";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import {
+  CLIENT_FOCUSED_OG_DESCRIPTION,
+  CLIENT_FOCUSED_OG_TITLE,
+  CLIENT_FOCUSED_SITE_DESCRIPTION,
+  CLIENT_FOCUSED_SITE_TITLE,
+  SITE_KEYWORDS,
+} from "@/lib/seo/site-metadata";
 import { getMetadataBaseUrl } from "@/lib/seo/site-url";
 import "./globals.css";
 
@@ -16,53 +23,35 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const siteDescription =
-  "Találj megbízható szakit a közeledben a legkisebb javításoktól a teljes lakásfelújításig, vagy vállalj fusimunkát szabadon, jutalékok nélkül. Csatlakozz a Fusizók közösségéhez!";
-
-const openGraphDescription =
-  "A platform, ahol a szakértelem találkozik a lakossági igényekkel. Legyen szó egy TV felszereléséről vagy lakásfelújításról.";
-
-const openGraphTitle =
-  "Fusizók – Építsd a vállalkozásod, vagy találd meg a tökéletes szakit!";
-
 export const metadata: Metadata = {
   metadataBase: new URL(getMetadataBaseUrl()),
   title: {
-    default: "Fusizók | Szakember Kereső & Másodállású Barkács Munkák",
-    template: "%s | Fusizók",
+    default: CLIENT_FOCUSED_SITE_TITLE,
+    template: "%s | Fusizok.hu",
   },
-  description: siteDescription,
-  keywords: [
-    "szakember kereső",
-    "fusimunka",
-    "barkácsolás",
-    "lakásfelújítás",
-    "szaki kereső",
-    "másodállás",
-    "gyors javítás",
-    "fusizok",
-  ],
+  description: CLIENT_FOCUSED_SITE_DESCRIPTION,
+  keywords: [...SITE_KEYWORDS],
   openGraph: {
     type: "website",
     locale: "hu_HU",
     url: "/",
-    siteName: "Fusizók",
-    title: openGraphTitle,
-    description: openGraphDescription,
+    siteName: "Fusizok.hu",
+    title: CLIENT_FOCUSED_OG_TITLE,
+    description: CLIENT_FOCUSED_OG_DESCRIPTION,
     images: [
       {
-        url: "/pwa-icon-512",
-        width: 512,
-        height: 512,
-        alt: "Fusizók logó",
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Fusizok.hu – Írd ki a munkát, ajánlatok jönnek",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: openGraphTitle,
-    description: openGraphDescription,
-    images: ["/pwa-icon-512"],
+    title: CLIENT_FOCUSED_OG_TITLE,
+    description: CLIENT_FOCUSED_OG_DESCRIPTION,
+    images: ["/opengraph-image"],
   },
   manifest: "/manifest.json",
   icons: {

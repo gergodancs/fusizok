@@ -4,12 +4,24 @@ import { ClientHowItWorks } from "@/components/client/client-how-it-works";
 import { JobPostForm } from "@/components/jobs/job-post-form";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
+import { CLIENT_FOCUSED_SITE_DESCRIPTION } from "@/lib/seo/site-metadata";
+import { getMetadataBaseUrl } from "@/lib/seo/site-url";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
-  title: "Munka feladása – fusizok.hu",
-  description:
-    "Írd le, mire van szükséged – a környék fusizói hamarosan jelentkeznek.",
+  title: "Munka feladása ingyen | Helyi fusizók ajánlatai",
+  description: CLIENT_FOCUSED_SITE_DESCRIPTION,
+  openGraph: {
+    title: "Munka feladása ingyen | Fusizok.hu",
+    description: CLIENT_FOCUSED_SITE_DESCRIPTION,
+    url: `${getMetadataBaseUrl()}/lakos`,
+    locale: "hu_HU",
+    siteName: "Fusizok.hu",
+    type: "website",
+  },
+  alternates: {
+    canonical: `${getMetadataBaseUrl()}/lakos`,
+  },
 };
 
 export default async function LakosPage() {

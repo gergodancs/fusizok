@@ -1,4 +1,5 @@
 import { TrendingUp, Users } from "lucide-react";
+import { SHOW_PLATFORM_STATS_BANNER } from "@/lib/constants/beta";
 import {
   formatPlatformCount,
   type PlatformStats,
@@ -13,6 +14,10 @@ export function PlatformStatsBanner({
   stats,
   className = "",
 }: PlatformStatsBannerProps) {
+  if (!SHOW_PLATFORM_STATS_BANNER) {
+    return null;
+  }
+
   const craftsmanLabel = formatPlatformCount(stats.craftsmanCount);
   const clientLabel = formatPlatformCount(stats.clientCount);
 

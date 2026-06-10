@@ -5,6 +5,7 @@ import { PageContainer } from "@/components/layout/page-container";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { getAuthContext } from "@/lib/auth/session";
 import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
+import { SHOW_PLATFORM_STATS_BANNER } from "@/lib/constants/beta";
 import { getPlatformStats } from "@/lib/stats/platform-stats";
 import { cardClassName } from "@/lib/ui-classes";
 
@@ -27,7 +28,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const redirectTo =
     redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
-  const stats = await getPlatformStats();
+  const stats = SHOW_PLATFORM_STATS_BANNER ? await getPlatformStats() : null;
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -51,7 +52,9 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           )}
         </div>
 
-        <PlatformStatsBanner stats={stats} className="mb-6 w-full max-w-md" />
+        {stats ? (
+          <PlatformStatsBanner stats={stats} className="mb-6 w-full max-w-md" />
+        ) : null}
 
         <div className={`w-full max-w-md ${cardClassName} p-6 sm:p-8`}>
           <AuthForm redirectTo={redirectTo} authError={authError} />

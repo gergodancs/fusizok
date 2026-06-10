@@ -118,6 +118,98 @@ export async function getCraftsmanJobListing(
   return data as Job | null;
 }
 
+export type PublicJobPreview = {
+  id: string;
+  title: string;
+  category: string;
+  county: string | null;
+  city: string | null;
+  created_at: string;
+};
+
+const PUBLIC_JOB_PREVIEW_SELECT =
+  "id, title, category, county, city, created_at";
+
+export async function listRecentOpenJobsForPublic(
+  limit = 8,
+): Promise<PublicJobPreview[]> {
+  const admin = createAdminClient();
+  if (!admin) {
+    return [];
+  }
+
+  const { data, error } = await admin
+    .from("jobs")
+    .select(PUBLIC_JOB_PREVIEW_SELECT)
+    .eq("status", "open")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[job-listing] Friss hirdetések hiba:", error.message);
+    return [];
+  }
+
+  return data ?? [];
+}
+
+function locationMatchScore(
+  job: PublicJobPreview,
+  city: string | null,
+  county: string | null,
+): number {
+  const jobCity = job.city?.trim();
+  const jobCounty = job.county?.trim();
+  const targetCity = city?.trim();
+  const targetCounty = county?.trim();
+
+  if (targetCity && jobCity && jobCity === targetCity) {
+    return 2;
+  }
+
+  if (targetCounty && jobCounty && jobCounty === targetCounty) {
+    return 1;
+  }
+
+  return 0;
+}
+
+export async function listSimilarOpenJobs(
+  jobId: string,
+  category: string,
+  city: string | null,
+  county: string | null,
+  limit = 4,
+): Promise<PublicJobPreview[]> {
+  const admin = createAdminClient();
+  if (!admin) {
+    return [];
+  }
+
+  const { data, error } = await admin
+    .from("jobs")
+    .select(PUBLIC_JOB_PREVIEW_SELECT)
+    .eq("status", "open")
+    .eq("category", category)
+    .neq("id", jobId)
+    .order("created_at", { ascending: false })
+    .limit(24);
+
+  if (error) {
+    console.error("[job-listing] Hasonló hirdetések hiba:", error.message);
+    return [];
+  }
+
+  return (data ?? [])
+    .sort(
+      (a, b) =>
+        locationMatchScore(b, city, county) -
+          locationMatchScore(a, city, county) ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    )
+    .slice(0, limit);
+}
+
 export async function listOpenJobIdsForSitemap(
   limit = 500,
 ): Promise<{ id: string; created_at: string }[]> {

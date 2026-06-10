@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobBidForm } from "@/components/jobs/job-bid-form";
 import { JobCraftsmanCta } from "@/components/jobs/job-craftsman-cta";
+import { PublicJobPreviewList } from "@/components/jobs/public-job-preview-list";
 import {
   getLocationLabelForJob,
   JobDetailsContent,
@@ -19,7 +20,10 @@ import { getJobBidStats } from "@/lib/job-bid-stats";
 import {
   getCraftsmanJobListing,
   getPublicJobListing,
+  listSimilarOpenJobs,
 } from "@/lib/jobs/job-listing";
+import { buildJobPostingJsonLd } from "@/lib/seo/job-posting";
+import { JsonLd } from "@/lib/seo/json-ld";
 import {
   buildPublicJobSeoTitle,
   formatPublicJobLocation,
@@ -137,39 +141,58 @@ export default async function HirdetesPage({ params }: HirdetesPageProps) {
     notFound();
   }
 
+  const similarJobs = await listSimilarOpenJobs(
+    publicJob.id,
+    publicJob.category,
+    publicJob.city,
+    publicJob.county,
+    4,
+  );
+
   const bidStats = {
     bidCount: publicJob.bid_count,
     contactSharedCount: 0,
   };
 
   return (
-    <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
-      <PageContainer narrow>
-        <Link
-          href="/"
-          className="text-sm text-amber-400 hover:text-amber-300"
-        >
-          ← Vissza a főoldalra
-        </Link>
+    <>
+      <JsonLd data={buildJobPostingJsonLd(publicJob)} />
+      <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
+        <PageContainer narrow>
+          <Link
+            href="/"
+            className="text-sm text-amber-400 hover:text-amber-300"
+          >
+            ← Vissza a főoldalra
+          </Link>
 
-        <div className="mt-4">
-          <JobDetailsContent
-            title={publicJob.title}
-            description={publicJob.description}
-            category={publicJob.category}
-            subCategories={publicJob.sub_categories}
-            locationLabel={formatPublicJobLocation(publicJob)}
-            requiredCompletionTime={publicJob.required_completion_time}
-            bidStats={bidStats}
-            lockedImages={publicJob.has_images}
-            imageCount={publicJob.has_images ? 1 : 0}
-            clientLabel={publicJob.client_display_name}
-            isPublicView
-          />
-        </div>
+          <div className="mt-4">
+            <JobDetailsContent
+              title={publicJob.title}
+              description={publicJob.description}
+              category={publicJob.category}
+              subCategories={publicJob.sub_categories}
+              locationLabel={formatPublicJobLocation(publicJob)}
+              requiredCompletionTime={publicJob.required_completion_time}
+              bidStats={bidStats}
+              lockedImages={publicJob.has_images}
+              imageCount={publicJob.has_images ? 1 : 0}
+              clientLabel={publicJob.client_display_name}
+              isPublicView
+            />
+          </div>
 
-        <JobCraftsmanCta jobId={publicJob.id} />
-      </PageContainer>
-    </div>
+          <JobCraftsmanCta jobId={publicJob.id} />
+        </PageContainer>
+
+        <PublicJobPreviewList
+          jobs={similarJobs}
+          title="Hasonló feladások"
+          subtitle="További nyitott munkák ugyanabból a kategóriából a közeledben."
+          ctaHref="/lakos"
+          ctaLabel="Saját munka feladása"
+        />
+      </div>
+    </>
   );
 }

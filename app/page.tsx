@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import {
   ClipboardList,
   Hammer,
@@ -7,10 +8,33 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PublicJobPreviewList } from "@/components/jobs/public-job-preview-list";
 import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
 import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
 import { getAuthContext } from "@/lib/auth/session";
+import { SHOW_PLATFORM_STATS_BANNER } from "@/lib/constants/beta";
+import { listRecentOpenJobsForPublic } from "@/lib/jobs/job-listing";
+import {
+  CLIENT_FOCUSED_OG_DESCRIPTION,
+  CLIENT_FOCUSED_OG_TITLE,
+  CLIENT_FOCUSED_SITE_DESCRIPTION,
+  CLIENT_FOCUSED_SITE_TITLE,
+} from "@/lib/seo/site-metadata";
+import { getMetadataBaseUrl } from "@/lib/seo/site-url";
 import { getPlatformStats } from "@/lib/stats/platform-stats";
+
+export const metadata: Metadata = {
+  title: CLIENT_FOCUSED_SITE_TITLE,
+  description: CLIENT_FOCUSED_SITE_DESCRIPTION,
+  openGraph: {
+    title: CLIENT_FOCUSED_OG_TITLE,
+    description: CLIENT_FOCUSED_OG_DESCRIPTION,
+    url: getMetadataBaseUrl(),
+  },
+  alternates: {
+    canonical: getMetadataBaseUrl(),
+  },
+};
 
 const FEATURES = [
   {
@@ -35,9 +59,10 @@ const HERO_BACKGROUND_IMAGE =
   "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&q=80&w=1600";
 
 export default async function Home() {
-  const [{ user, profile }, stats] = await Promise.all([
+  const [{ user, profile }, recentJobs, stats] = await Promise.all([
     getAuthContext(),
-    getPlatformStats(),
+    listRecentOpenJobsForPublic(6),
+    SHOW_PLATFORM_STATS_BANNER ? getPlatformStats() : Promise.resolve(null),
   ]);
 
   if (user && profile?.role === "craftsman") {
@@ -71,24 +96,28 @@ export default async function Home() {
                 strokeWidth={1.75}
                 aria-hidden
               />
-              Barkács segítség a környéken
+              Ingyenes munkafeladás megrendelőknek
             </p>
             <h1 className="text-3xl font-black leading-tight tracking-tight text-zinc-50 drop-shadow-lg sm:text-4xl sm:leading-tight lg:text-5xl lg:leading-[1.15]">
-              Építsd a vállalkozásod,{" "}
-              <span className="text-amber-400">fusizz szabadon</span> – vagy
-              találd meg a{" "}
-              <span className="text-amber-400">tökéletes szakit</span>!
+              Írd ki a munkát,{" "}
+              <span className="text-amber-400">ajánlatok jönnek</span> a környék
+              fusizóitól
             </h1>
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-zinc-300 drop-shadow-md sm:text-lg sm:leading-relaxed">
-              A Fusizók az a hely, ahol a szakértelem találkozik a lakossági
-              igényekkel. Legyen szó egy TV felszereléséről, gyors otthoni
-              javításokról, vagy akár egy teljes lakásfelújításról – nálunk a
-              legkisebb és a legnagyobb projektek is azonnal gazdára találnak.
+              Polc fúrás, bútor összeszerelés, kert, villany – írd le ingyen,
+              miben kell segítség. A helyi fusizók pályáznak rád árral és
+              határidővel, te választasz. Fusizó vagy? Regisztrálj és böngéssz
+              munkákat.
             </p>
 
             <PwaNotificationCta />
 
-            <PlatformStatsBanner stats={stats} className="mx-auto mt-8 max-w-xl" />
+            {stats ? (
+              <PlatformStatsBanner
+                stats={stats}
+                className="mx-auto mt-8 max-w-xl"
+              />
+            ) : null}
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
@@ -109,6 +138,14 @@ export default async function Home() {
           </div>
         </div>
       </section>
+
+      <PublicJobPreviewList
+        jobs={recentJobs}
+        title="Friss feladások"
+        subtitle="Valós, nyitott munkák a platformon – nézd meg, milyen segítséget keresnek a környékeden."
+        ctaHref="/lakos"
+        ctaLabel="Te is feladod a munkát"
+      />
 
       <section className="border-t border-zinc-800 bg-zinc-900/50">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:grid-cols-3 sm:px-6">

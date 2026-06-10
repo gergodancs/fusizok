@@ -24,6 +24,18 @@ export function SiteFooter() {
           </div>
         </div>
         <nav className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          <Link
+            href="/lakos"
+            className="transition hover:text-amber-400"
+          >
+            Munka feladása
+          </Link>
+          <Link
+            href="/hogyan-mukodik"
+            className="transition hover:text-amber-400"
+          >
+            Hogyan működik?
+          </Link>
           <FeedbackLink
             className="inline-flex items-center gap-1.5 transition hover:text-amber-400"
             label="Visszajelzés"
