@@ -107,7 +107,7 @@ describe("4. Stripe fizetés után chat feloldás", () => {
     ).resolves.toBe(true);
   });
 
-  it("pending_payment → active átmenet szimulációja feloldja a küldést", async () => {
+  it("contact_shared után a fusizó küldhet rejected státusz nélkül", async () => {
     serverMock.setRows("job_bids", [
       {
         id: BID_ID,
@@ -120,12 +120,12 @@ describe("4. Stripe fizetés után chat feloldás", () => {
 
     await expect(
       canCraftsmanSendInConversation(JOB_ID, CRAFTSMAN_ID),
-    ).resolves.toBe(false);
+    ).resolves.toBe(true);
 
-    serverMock.updateBidStatus(JOB_ID, CRAFTSMAN_ID, "active");
+    serverMock.updateBidStatus(JOB_ID, CRAFTSMAN_ID, "rejected");
 
     await expect(
       canCraftsmanSendInConversation(JOB_ID, CRAFTSMAN_ID),
-    ).resolves.toBe(true);
+    ).resolves.toBe(false);
   });
 });

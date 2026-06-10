@@ -8,6 +8,10 @@ import {
   canCraftsmanSendInConversation,
   canUserAccessConversation,
 } from "@/lib/chat-access";
+import {
+  containsProfanity,
+  PROFANITY_WARNING,
+} from "@/lib/moderation/profanity";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -35,7 +39,7 @@ export async function sendMessage(
 
   const { data: conversation } = await supabase
     .from("conversations")
-    .select("id, job_id, client_id, craftsman_id")
+    .select("id, job_id, client_id, craftsman_id, status")
     .eq("id", conversationId)
     .maybeSingle();
 
@@ -51,6 +55,17 @@ export async function sendMessage(
     };
   }
 
+  if (conversation.status === "closed") {
+    return {
+      error:
+        "Ez a beszélgetés lezárult – a megrendelő másik szakit választott.",
+    };
+  }
+
+  if (containsProfanity(content)) {
+    return { error: PROFANITY_WARNING };
+  }
+
   if (conversation.craftsman_id === user.id) {
     const canSend = await canCraftsmanSendInConversation(
       conversation.job_id,
@@ -59,7 +74,7 @@ export async function sendMessage(
     if (!canSend) {
       return {
         error:
-          "A válaszadáshoz előbb fizesd ki a chat kapcsolatfelvételi díjat.",
+          "A chat csak akkor érhető el, ha a megrendelő elfogadta az ajánlatodat.",
       };
     }
   }

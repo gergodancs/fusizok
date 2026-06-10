@@ -1,17 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { ReportButton } from "@/components/report/report-button";
 import { PageContainer } from "@/components/layout/page-container";
-import { CraftsmanChatUnlock } from "@/components/payments/craftsman-chat-unlock";
-import { CraftsmanPaymentReturn } from "@/components/payments/craftsman-payment-return";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import {
   getConversationHeader,
   getConversationMessages,
 } from "@/lib/conversations";
-import { getStripeContactUnlockPriceHuf } from "@/lib/stripe/config";
 import { getJobStatusLabel } from "@/lib/status-labels";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -32,17 +29,16 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
     notFound();
   }
 
-  const { messages, canAccess, canSend, bidId, craftsmanPaymentRequired } =
-    await getConversationMessages(id, user.id);
+  const { messages, canAccess, canSend } = await getConversationMessages(
+    id,
+    user.id,
+  );
   if (!canAccess) {
     notFound();
   }
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
-      <Suspense fallback={null}>
-        <CraftsmanPaymentReturn conversationId={id} />
-      </Suspense>
       <PageContainer narrow>
         <div className="mb-6">
           <Link
@@ -55,26 +51,30 @@ export default async function SzakiChatPage({ params }: ChatPageProps) {
           <h1 className="mt-1 text-2xl font-black text-zinc-50">
             {header.jobTitle}
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {header.otherPartyName} · Munka: {getJobStatusLabel(header.jobStatus)}
-          </p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <p className="text-sm text-zinc-500">
+              {header.otherPartyName} · Munka:{" "}
+              {getJobStatusLabel(header.jobStatus)}
+            </p>
+            <ReportButton
+              reportedUserId={header.otherPartyId}
+              reportedUserName={header.otherPartyName}
+              contextType="chat"
+              contextId={id}
+            />
+          </div>
         </div>
-
-        {craftsmanPaymentRequired && bidId && (
-          <CraftsmanChatUnlock
-            bidId={bidId}
-            conversationId={id}
-            jobTitle={header.jobTitle}
-            priceHuf={getStripeContactUnlockPriceHuf()}
-          />
-        )}
 
         <ChatRoom
           conversationId={id}
           currentUserId={user.id}
           initialMessages={messages}
           canSend={canSend}
-          readOnlyMessage="A válaszadáshoz aktiváld a chatet a fenti gombbal."
+          readOnlyMessage={
+            header.conversationStatus === "closed"
+              ? "Ez a beszélgetés lezárult – a megrendelő másik szakit választott."
+              : undefined
+          }
         />
       </PageContainer>
     </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CreditBalanceLink } from "@/components/credits/credit-balance-link";
 import { NavBadge } from "@/components/layout/nav-badge";
 import type { CraftsmanNavCounts } from "@/lib/notifications";
 
@@ -29,14 +30,16 @@ const links = [
 
 type CraftsmanNavProps = {
   counts: CraftsmanNavCounts;
+  credits: number;
 };
 
-export function CraftsmanNav({ counts }: CraftsmanNavProps) {
+export function CraftsmanNav({ counts, credits }: CraftsmanNavProps) {
   const pathname = usePathname();
 
   return (
     <nav className="border-b border-zinc-800 bg-zinc-900/80">
-      <div className="mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 sm:px-6">
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+        <div className="flex gap-1 overflow-x-auto">
         {links.map((link) => {
           const isActive = link.exact
             ? pathname === link.href
@@ -60,6 +63,8 @@ export function CraftsmanNav({ counts }: CraftsmanNavProps) {
             </Link>
           );
         })}
+        </div>
+        <CreditBalanceLink credits={credits} />
       </div>
     </nav>
   );

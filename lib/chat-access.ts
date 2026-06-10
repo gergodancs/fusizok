@@ -42,14 +42,14 @@ export async function canCraftsmanReadConversation(
   return isContactSharedForConversation(jobId, craftsmanId);
 }
 
-/** Fusizó csak active státuszú (fizetett / ingyenes kredit) ajánlatnál küldhet üzenetet. */
+/** Fusizó küldhet, ha a megrendelő megosztotta a kapcsolatot (pay-to-apply után szabad chat). */
 export async function canCraftsmanSendInConversation(
   jobId: string,
   craftsmanId: string,
 ): Promise<boolean> {
   const bid = await getBidChatAccess(jobId, craftsmanId);
   if (!bid?.contact_shared) return false;
-  return bid.status === "active";
+  return bid.status !== "rejected";
 }
 
 export async function canUserAccessConversation(

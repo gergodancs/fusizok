@@ -125,7 +125,7 @@ export async function getConversationMessages(
 
   const { data: conversation } = await supabase
     .from("conversations")
-    .select("id, job_id, client_id, craftsman_id")
+    .select("id, job_id, client_id, craftsman_id, status")
     .eq("id", conversationId)
     .maybeSingle();
 
@@ -151,8 +151,9 @@ export async function getConversationMessages(
   }
 
   const isCraftsman = conversation.craftsman_id === userId;
-  let canSend = true;
-  let craftsmanPaymentRequired = false;
+  const isClosed = conversation.status === "closed";
+  let canSend = !isClosed;
+  const craftsmanPaymentRequired = false;
   let bidId: string | null = null;
 
   if (isCraftsman) {
@@ -169,12 +170,11 @@ export async function getConversationMessages(
       .maybeSingle();
 
     bidId = bid?.id ?? null;
-    craftsmanPaymentRequired = bid?.status === "pending_payment";
   }
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, content, created_at")
+    .select("id, conversation_id, sender_id, content, created_at, is_system")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 
@@ -206,7 +206,7 @@ export async function getConversationHeader(
 
   const { data } = await supabase
     .from("conversations")
-    .select("id, job_id, client_id, craftsman_id")
+    .select("id, job_id, client_id, craftsman_id, status")
     .eq("id", conversationId)
     .maybeSingle();
 
@@ -237,5 +237,7 @@ export async function getConversationHeader(
     jobTitle: job?.title ?? "Ismeretlen munka",
     jobStatus: job?.status ?? "open",
     otherPartyName: otherProfile?.full_name ?? "Ismeretlen",
+    otherPartyId: otherId,
+    conversationStatus: data.status ?? "open",
   };
 }

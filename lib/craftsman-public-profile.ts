@@ -10,6 +10,7 @@ export type CraftsmanPublicProfile = {
   id: string;
   full_name: string | null;
   avatar_url: string | null;
+  is_verified: boolean;
   bio: string | null;
   professions: string[];
   coverageAreas: CoverageArea[];
@@ -114,7 +115,7 @@ export async function getCraftsmanPublicProfile(
 
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url, role")
+    .select("id, full_name, avatar_url, role, is_verified")
     .eq("id", craftsmanId)
     .maybeSingle();
 
@@ -144,6 +145,7 @@ export async function getCraftsmanPublicProfile(
     id: profile.id,
     full_name: profile.full_name,
     avatar_url: profile.avatar_url,
+    is_verified: Boolean(profile.is_verified),
     bio: craftsman?.bio ?? null,
     professions: normalizeProfessions(craftsman?.profession),
     coverageAreas: normalizeCoverageAreas(

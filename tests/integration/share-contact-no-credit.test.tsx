@@ -58,7 +58,7 @@ const INTRO_MSG = {
   created_at: new Date().toISOString(),
 };
 
-describe("3. Kontakt megosztás kredit nélkül – zárolt válasz", () => {
+describe("3. Kontakt megosztás – szabad chat (pay-to-apply)", () => {
   let mock: ReturnType<typeof createMockSupabaseClient>;
 
   beforeEach(() => {
@@ -73,7 +73,7 @@ describe("3. Kontakt megosztás kredit nélkül – zárolt válasz", () => {
             job_id: JOB_ID,
             craftsman_id: CRAFTSMAN_ID,
             contact_shared: true,
-            status: "pending_payment",
+            status: "active",
           },
         ],
         conversations: [
@@ -82,18 +82,17 @@ describe("3. Kontakt megosztás kredit nélkül – zárolt válasz", () => {
             job_id: JOB_ID,
             client_id: CLIENT_ID,
             craftsman_id: CRAFTSMAN_ID,
+            status: "open",
           },
         ],
         messages: [INTRO_MSG],
-        craftsman_profiles: [{ id: CRAFTSMAN_ID, free_credits: 0 }],
       },
       rpc: {
         share_contact_with_credit: () => ({
           data: {
             success: true,
-            outcome: "craftsman_payment_required",
+            outcome: "activated",
             conversation_id: CONV_ID,
-            used_credit: false,
             job_id: JOB_ID,
             craftsman_id: CRAFTSMAN_ID,
           },
@@ -109,46 +108,41 @@ describe("3. Kontakt megosztás kredit nélkül – zárolt válasz", () => {
     } as never);
   });
 
-  it("shareContact létrehozza a chatet craftsman_payment_required kimenettel", async () => {
+  it("shareContact azonnal aktiválja a chatet", async () => {
     const result = await initiateShareContact(BID_ID);
 
     expect(result.ok).toBe(true);
-    expect(result.outcome).toBe("craftsman_payment_required");
+    expect(result.outcome).toBe("activated");
     expect(result.conversationId).toBe(CONV_ID);
-    expect(result.usedCredit).toBe(false);
   });
 
-  it("getConversationMessages: fusizó látja az intro üzenetet, de canSend=false", async () => {
+  it("getConversationMessages: fusizó válaszolhat contact_shared után", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({ id: CRAFTSMAN_ID } as never);
 
     const data = await getConversationMessages(CONV_ID, CRAFTSMAN_ID);
 
     expect(data.canAccess).toBe(true);
-    expect(data.canSend).toBe(false);
-    expect(data.craftsmanPaymentRequired).toBe(true);
+    expect(data.canSend).toBe(true);
+    expect(data.craftsmanPaymentRequired).toBe(false);
     expect(data.messages).toHaveLength(1);
     expect(data.messages[0]?.content).toContain("tetszik az ajánlatod");
   });
 
-  it("ChatRoom UI: nincs válaszmező zárolt chatnél", () => {
+  it("ChatRoom UI: válaszmező elérhető aktív chatnél", () => {
     render(
       <ChatRoom
         conversationId={CONV_ID}
         currentUserId={CRAFTSMAN_ID}
         initialMessages={[INTRO_MSG]}
-        canSend={false}
-        readOnlyMessage="A válaszadáshoz előbb fizesd ki a chat kapcsolatfelvételi díjat."
+        canSend
       />,
     );
 
     expect(screen.getByText(INTRO_MSG.content)).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("Írj üzenetet…")).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/fizesd ki a chat kapcsolatfelvételi díjat/i),
-    ).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Írj üzenetet…")).toBeInTheDocument();
   });
 
-  it("backend sendMessage blokkolja a fusizó üzenetét pending_payment mellett", async () => {
+  it("backend sendMessage engedi a fusizó üzenetét active státusznál", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({ id: CRAFTSMAN_ID } as never);
     vi.mocked(getUserProfile).mockResolvedValue({
       full_name: "Teszt Fusizó",
@@ -160,7 +154,7 @@ describe("3. Kontakt megosztás kredit nélkül – zárolt válasz", () => {
 
     const result = await sendMessage({}, formData);
 
-    expect(result.error).toMatch(/fizesd ki a chat kapcsolatfelvételi díjat/i);
-    expect(mock.getRows("messages")).toHaveLength(1);
+    expect(result.error).toBeUndefined();
+    expect(mock.getRows("messages")).toHaveLength(2);
   });
 });

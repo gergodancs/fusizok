@@ -31,7 +31,7 @@ const CONV_ID = "conv-1";
 const INTRO =
   "Szia! Köszönöm a pályázatod! Teszt Lakos tetszik az ajánlatod – mesélj még róla!";
 
-describe("2. Kontakt megosztás ingyenes kredittel", () => {
+describe("2. Kontakt megosztás – chat aktiválás", () => {
   let mock: ReturnType<typeof createMockSupabaseClient>;
 
   beforeEach(() => {
@@ -82,13 +82,12 @@ describe("2. Kontakt megosztás ingyenes kredittel", () => {
     } as never);
   });
 
-  it("RPC aktiválja a chatet, intro üzenet megy, usedCredit=true", async () => {
+  it("RPC aktiválja a chatet és elindítja a beszélgetést", async () => {
     const result = await initiateShareContact(BID_ID);
 
     expect(result.ok).toBe(true);
     expect(result.outcome).toBe("activated");
     expect(result.conversationId).toBe(CONV_ID);
-    expect(result.usedCredit).toBe(true);
 
     expect(mock.rpc).toHaveBeenCalledWith("share_contact_with_credit", {
       p_bid_id: BID_ID,

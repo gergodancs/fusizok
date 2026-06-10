@@ -96,6 +96,24 @@ export function ChatRoom({
           </p>
         ) : (
           messages.map((msg) => {
+            if (msg.is_system) {
+              return (
+                <div key={msg.id} className="flex justify-center">
+                  <div className="max-w-[90%] rounded-xl border border-zinc-700/80 bg-zinc-800/60 px-4 py-3 text-center text-sm text-zinc-400">
+                    <p>{msg.content}</p>
+                    <p className="mt-1 text-[10px] text-zinc-600">
+                      {new Date(msg.created_at).toLocaleString("hu-HU", {
+                        month: "short",
+                        day: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
+                  </div>
+                </div>
+              );
+            }
+
             const isOwn = msg.sender_id === currentUserId;
             return (
               <div

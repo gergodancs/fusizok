@@ -42,7 +42,7 @@ describe("chat-access – fusizó olvasás / küldés jogosultság", () => {
     ).resolves.toBe(true);
   });
 
-  it("fusizó NEM küldhet pending_payment státusznál", async () => {
+  it("fusizó küldhet pending_payment státusznál is (pay-to-apply után szabad chat)", async () => {
     const mock = createMockSupabaseClient({
       tables: {
         job_bids: [
@@ -59,7 +59,7 @@ describe("chat-access – fusizó olvasás / küldés jogosultság", () => {
 
     await expect(
       canCraftsmanSendInConversation(JOB_ID, CRAFTSMAN_ID),
-    ).resolves.toBe(false);
+    ).resolves.toBe(true);
   });
 
   it("fusizó küldhet active státusznál", async () => {

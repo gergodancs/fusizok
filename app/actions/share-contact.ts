@@ -9,6 +9,7 @@ import type {
   ContactActivationPollResult,
   ShareContactResult,
 } from "@/lib/types/payments";
+import { closeLosingChatsForJob } from "@/lib/chat/close-losing-chats";
 import { createClient } from "@/lib/supabase/server";
 
 type ShareContactRpcResult = {
@@ -45,17 +46,11 @@ async function sendCraftsmanActivationNotification(params: {
   jobTitle: string;
   conversationId: string;
   bidId: string;
-  paymentRequired: boolean;
 }) {
   const appUrl = getAppBaseUrl();
 
-  const title = params.paymentRequired
-    ? "Új érdeklődő – fizetés szükséges a válaszhoz"
-    : "Ajánlat elfogadva!";
-
-  const body = params.paymentRequired
-    ? `${params.clientName} megosztotta veled a kapcsolatot a(z) „${params.jobTitle}” munkánál. A válaszadáshoz egyszeri díj szükséges.`
-    : `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`;
+  const title = "Ajánlat elfogadva!";
+  const body = `Gratulálunk! ${params.clientName} elfogadta az ajánlatodat, elindult a chat!`;
 
   const chatUrl = `${appUrl}/szaki/uzenetek/${params.conversationId}`;
 
@@ -70,7 +65,7 @@ async function sendCraftsmanActivationNotification(params: {
         clientName: params.clientName,
         jobTitle: params.jobTitle,
         chatUrl,
-        paymentRequired: params.paymentRequired,
+        paymentRequired: false,
       }),
       tag: `bid-accepted-${params.bidId}`,
     });
@@ -155,29 +150,26 @@ export async function initiateShareContact(
     .eq("id", result.job_id ?? "")
     .maybeSingle();
 
-  if (
-    result.craftsman_id &&
-    (result.outcome === "activated" ||
-      result.outcome === "craftsman_payment_required")
-  ) {
+  if (result.craftsman_id && result.job_id && result.outcome === "activated") {
+    await closeLosingChatsForJob(supabase, {
+      jobId: result.job_id,
+      winningCraftsmanId: result.craftsman_id,
+      clientId: user.id,
+    });
+
     await sendCraftsmanActivationNotification({
       craftsmanId: result.craftsman_id,
       clientName,
       jobTitle: job?.title ?? "Munka",
       conversationId,
       bidId,
-      paymentRequired: result.outcome === "craftsman_payment_required",
     });
   }
 
   revalidateSharePaths(conversationId);
 
   const outcome =
-    result.outcome === "already_active"
-      ? "already_active"
-      : result.outcome === "craftsman_payment_required"
-        ? "craftsman_payment_required"
-        : "activated";
+    result.outcome === "already_active" ? "already_active" : "activated";
 
   return {
     ok: true,

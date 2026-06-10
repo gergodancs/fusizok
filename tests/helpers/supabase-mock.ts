@@ -5,12 +5,18 @@ type Row = Record<string, unknown>;
 type TableFilter = {
   column: string;
   value: unknown;
+  op?: "eq" | "neq";
 };
 
 type QueryResult = { data: unknown; error: unknown };
 
 function matchesFilters(row: Row, filters: TableFilter[]): boolean {
-  return filters.every((f) => row[f.column] === f.value);
+  return filters.every((f) => {
+    if (f.op === "neq") {
+      return row[f.column] !== f.value;
+    }
+    return row[f.column] === f.value;
+  });
 }
 
 function createQueryBuilder(
@@ -58,6 +64,10 @@ function createQueryBuilder(
     filters.push({ column, value });
     return builder;
   });
+  builder.neq = vi.fn((column: string, value: unknown) => {
+    filters.push({ column, value, op: "neq" });
+    return builder;
+  });
   builder.or = vi.fn(() => builder);
   builder.order = vi.fn((_column: string, opts?: { ascending?: boolean }) => {
     orderAsc = opts?.ascending !== false;
@@ -93,6 +103,36 @@ function createQueryBuilder(
       onInsert?.(row);
     }
     return { error: null };
+  });
+  builder.update = vi.fn((patch: Row) => {
+    const updateFilters: TableFilter[] = [...filters];
+
+    const applyUpdate = async () => {
+      for (const row of rows) {
+        if (matchesFilters(row, updateFilters)) {
+          Object.assign(row, patch);
+        }
+      }
+      return { error: null };
+    };
+
+    const updateBuilder: Record<string, unknown> = {};
+    updateBuilder.eq = vi.fn((column: string, value: unknown) => {
+      updateFilters.push({ column, value });
+      return updateBuilder;
+    });
+    updateBuilder.neq = vi.fn((column: string, value: unknown) => {
+      updateFilters.push({ column, value, op: "neq" });
+      return updateBuilder;
+    });
+    updateBuilder.in = vi.fn((_column: string, _values: unknown[]) => {
+      return updateBuilder;
+    });
+    updateBuilder.then = (
+      onFulfilled: (value: { error: null }) => unknown,
+      onRejected?: (reason: unknown) => unknown,
+    ) => applyUpdate().then(onFulfilled, onRejected);
+    return updateBuilder;
   });
   builder.upsert = vi.fn(async () => ({ error: null }));
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { ReportButton } from "@/components/report/report-button";
 import { ChatJobActions } from "@/components/reviews/chat-job-actions";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
@@ -32,7 +33,10 @@ export default async function LakosChatPage({ params }: LakosChatPageProps) {
     notFound();
   }
 
-  const { messages, canAccess } = await getConversationMessages(id, user.id);
+  const { messages, canAccess, canSend } = await getConversationMessages(
+    id,
+    user.id,
+  );
   if (!canAccess) {
     notFound();
   }
@@ -53,7 +57,15 @@ export default async function LakosChatPage({ params }: LakosChatPageProps) {
           <h1 className="mt-1 text-2xl font-black text-zinc-50">
             {header.jobTitle}
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">{header.otherPartyName}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-3">
+            <p className="text-sm text-zinc-500">{header.otherPartyName}</p>
+            <ReportButton
+              reportedUserId={header.otherPartyId}
+              reportedUserName={header.otherPartyName}
+              contextType="chat"
+              contextId={id}
+            />
+          </div>
         </div>
 
         {reviewContext && (
@@ -72,6 +84,12 @@ export default async function LakosChatPage({ params }: LakosChatPageProps) {
           conversationId={id}
           currentUserId={user.id}
           initialMessages={messages}
+          canSend={canSend}
+          readOnlyMessage={
+            header.conversationStatus === "closed"
+              ? "Ez a beszélgetés lezárult – a megrendelő másik szakit választott."
+              : undefined
+          }
         />
       </PageContainer>
     </div>

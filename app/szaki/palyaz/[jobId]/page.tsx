@@ -6,6 +6,7 @@ import { JobImageGallery } from "@/components/jobs/job-image-gallery";
 import { PageContainer } from "@/components/layout/page-container";
 import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
+import { getCraftsmanCreditBalance } from "@/lib/credits/balance";
 import { getJobBidStats } from "@/lib/job-bid-stats";
 import { formatJobLocation } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
@@ -21,7 +22,7 @@ type PalyazPageProps = {
 
 export default async function PalyazPage({ params }: PalyazPageProps) {
   const { jobId } = await params;
-  await requireCraftsman(`/szaki/palyaz/${jobId}`);
+  const { user } = await requireCraftsman(`/szaki/palyaz/${jobId}`);
 
   const supabase = await createClient();
   const { data: job } = await supabase
@@ -37,7 +38,10 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
     notFound();
   }
 
-  const bidStats = await getJobBidStats(job.id);
+  const [bidStats, creditBalance] = await Promise.all([
+    getJobBidStats(job.id),
+    getCraftsmanCreditBalance(user.id),
+  ]);
   const imageUrls = (job.image_urls as string[] | null) ?? [];
 
   return (
@@ -73,7 +77,11 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
 
         <div className={`${cardClassName} p-6 sm:p-8`}>
           <h2 className="mb-6 text-lg font-bold text-zinc-100">Pályázati űrlap</h2>
-          <JobBidForm jobId={job.id} jobTitle={job.title} />
+          <JobBidForm
+            jobId={job.id}
+            jobTitle={job.title}
+            creditBalance={creditBalance}
+          />
         </div>
       </PageContainer>
     </div>

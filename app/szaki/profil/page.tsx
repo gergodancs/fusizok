@@ -3,12 +3,14 @@ import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { DeleteAccountSection } from "@/components/profile/delete-account-section";
 import { ProfileSettingsForm } from "@/components/profile/profile-settings-form";
 import { CraftsmanProfileSettings } from "@/components/craftsman/craftsman-profile-settings";
+import { KycVerificationSection } from "@/components/craftsman/kyc-verification-section";
 import { CraftsmanReviewsSection } from "@/components/reviews/craftsman-reviews-section";
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getUserProfile } from "@/lib/auth/session";
 import { getCraftsmanProfileForEdit } from "@/lib/craftsman-profile";
 import { getCraftsmanPortfolioImages } from "@/lib/portfolio";
+import { getCraftsmanKycInfo } from "@/lib/kyc";
 import { getCraftsmanReviewSummary } from "@/lib/reviews";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -19,13 +21,19 @@ export const metadata: Metadata = {
 
 export default async function SzakiProfilPage() {
   const { user } = await requireCraftsman("/szaki/profil");
-  const [profile, { professions, location, bio }, portfolioImages, reviewSummary] =
-    await Promise.all([
-      getUserProfile(user.id),
-      getCraftsmanProfileForEdit(user.id),
-      getCraftsmanPortfolioImages(user.id),
-      getCraftsmanReviewSummary(user.id),
-    ]);
+  const [
+    profile,
+    { professions, location, bio },
+    portfolioImages,
+    reviewSummary,
+    kycInfo,
+  ] = await Promise.all([
+    getUserProfile(user.id),
+    getCraftsmanProfileForEdit(user.id),
+    getCraftsmanPortfolioImages(user.id),
+    getCraftsmanReviewSummary(user.id),
+    getCraftsmanKycInfo(user.id),
+  ]);
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -61,6 +69,13 @@ export default async function SzakiProfilPage() {
               defaultLocation={location}
               defaultBio={bio}
               portfolioImages={portfolioImages}
+            />
+          </div>
+
+          <div className={`${cardClassName} p-6 sm:p-8`}>
+            <KycVerificationSection
+              isVerified={kycInfo.isVerified}
+              kycStatus={kycInfo.kycStatus}
             />
           </div>
 

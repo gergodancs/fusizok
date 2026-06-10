@@ -27,7 +27,7 @@ const JOB_ID = "job-locked";
 const CLIENT_ID = "client-1";
 const CRAFTSMAN_ID = "craftsman-locked";
 
-describe("5. Negatív teszt – API blokkolás fizetés nélkül", () => {
+describe("5. Negatív teszt – API blokkolás elfogadás nélkül", () => {
   let mock: ReturnType<typeof createMockSupabaseClient>;
 
   beforeEach(() => {
@@ -47,8 +47,8 @@ describe("5. Negatív teszt – API blokkolás fizetés nélkül", () => {
           {
             job_id: JOB_ID,
             craftsman_id: CRAFTSMAN_ID,
-            contact_shared: true,
-            status: "pending_payment",
+            contact_shared: false,
+            status: "pending",
           },
         ],
         messages: [
@@ -69,15 +69,15 @@ describe("5. Negatív teszt – API blokkolás fizetés nélkül", () => {
     } as never);
   });
 
-  it("sendMessage NEM menti az üzenetet zárolt chatben", async () => {
+  it("sendMessage NEM menti az üzenetet, ha nincs elfogadva az ajánlat", async () => {
     const formData = new FormData();
     formData.set("conversation_id", CONV_ID);
-    formData.set("content", "Illegális válasz fizetés nélkül");
+    formData.set("content", "Illegális válasz elfogadás nélkül");
 
     const result = await sendMessage({}, formData);
 
     expect(result.error).toBeTruthy();
-    expect(result.error).toMatch(/fizesd ki a chat kapcsolatfelvételi díjat/i);
+    expect(result.error).toMatch(/megosztotta a kapcsolatot/i);
     expect(mock.getRows("messages")).toHaveLength(1);
     expect(mock.getRows("messages")[0]?.content).toBe("Intro üzenet");
   });
@@ -104,7 +104,7 @@ describe("5. Negatív teszt – API blokkolás fizetés nélkül", () => {
     expect(result.error).toMatch(/Bejelentkezés szükséges/i);
   });
 
-  it("lakos továbbra is küldhet zárolt fusizó chatben", async () => {
+  it("lakos továbbra is küldhet, ha a fusizó még nem kapott hozzáférést", async () => {
     vi.mocked(getSessionUser).mockResolvedValue({ id: CLIENT_ID } as never);
     vi.mocked(getUserProfile).mockResolvedValue({
       full_name: "Teszt Lakos",

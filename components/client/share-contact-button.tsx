@@ -66,7 +66,7 @@ export function ShareContactButton({ bidId }: ShareContactButtonProps) {
             Feldolgozás…
           </>
         ) : (
-          "Kapcsolat megosztása"
+          "Ajánlat elfogadása"
         )}
       </button>
       {error && (

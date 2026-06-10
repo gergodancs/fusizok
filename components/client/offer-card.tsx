@@ -2,6 +2,7 @@ import Link from "next/link";
 import { rejectBid } from "@/app/actions/reject-bid";
 import { ShareContactButton } from "@/components/client/share-contact-button";
 import { UserAvatar } from "@/components/profile/user-avatar";
+import { VerifiedBadge } from "@/components/profile/verified-badge";
 import { StarRating } from "@/components/reviews/star-rating";
 import type { ClientBidOffer } from "@/lib/client-bids";
 import { getBidActivityStatusLabel } from "@/lib/status-labels";
@@ -28,9 +29,12 @@ export function OfferCard({ offer }: OfferCardProps) {
           />
           <div>
             <h3 className="font-bold text-zinc-100">{offer.job_title}</h3>
-            <p className="mt-1 text-sm text-amber-400">
-              {offer.craftsman_name ?? "Fusizó"}
-            </p>
+            <div className="mt-1 flex flex-wrap items-center gap-2">
+              <p className="text-sm text-amber-400">
+                {offer.craftsman_name ?? "Fusizó"}
+              </p>
+              {offer.craftsman_is_verified && <VerifiedBadge />}
+            </div>
             {offer.craftsman_avg_rating !== null && (
               <div className="mt-1 flex items-center gap-2">
                 <StarRating rating={offer.craftsman_avg_rating} size="sm" />

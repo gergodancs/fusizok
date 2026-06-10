@@ -4,4 +4,5 @@ export type Message = {
   sender_id: string;
   content: string;
   created_at: string;
+  is_system?: boolean;
 };

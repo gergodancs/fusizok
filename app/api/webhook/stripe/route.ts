@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { activateContactAfterPayment } from "@/lib/payments/activate-contact-after-payment";
+import { addCreditsAfterPurchase } from "@/lib/payments/add-credits-after-purchase";
+import { getCreditPack } from "@/lib/credits/packages";
 import { getStripeServerClient } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -32,22 +34,46 @@ async function getJobTitle(jobId: string): Promise<string> {
   return data?.title ?? "Munka";
 }
 
+async function handleCreditPurchase(
+  session: Stripe.Checkout.Session,
+  eventId: string,
+): Promise<void> {
+  const metadata = session.metadata ?? {};
+  const profileId = metadata.profile_id;
+  const packId = metadata.credit_pack;
+
+  if (!profileId || !packId) {
+    throw new Error("Hiányzó kredit vásárlás metadata.");
+  }
+
+  const pack = getCreditPack(packId);
+  if (!pack) {
+    throw new Error(`Ismeretlen kredit csomag: ${packId}`);
+  }
+
+  await addCreditsAfterPurchase({
+    profileId,
+    amount: pack.credits,
+    description: `${pack.name} csomag vásárlás (${pack.credits} kredit)`,
+    idempotencyKey: eventId,
+    metadata: {
+      stripe_session_id: session.id,
+      credit_pack: pack.id,
+      payment_type: "credit_purchase",
+    },
+  });
+}
+
 async function handleCheckoutSessionCompleted(
   session: Stripe.Checkout.Session,
   eventId: string,
 ): Promise<void> {
   const metadata = session.metadata ?? {};
-  const bidId = metadata.bid_id;
-  const jobId = metadata.job_id;
-  const craftsmanId = metadata.craftsman_id;
-  const clientId = metadata.client_id;
 
   console.log("[stripe-webhook] checkout.session.completed feldolgozás", {
     eventId,
     sessionId: session.id,
-    bidId,
-    jobId,
-    craftsmanId,
+    paymentType: metadata.payment_type,
     paymentStatus: session.payment_status,
   });
 
@@ -58,6 +84,16 @@ async function handleCheckoutSessionCompleted(
     });
     return;
   }
+
+  if (metadata.payment_type === "credit_purchase") {
+    await handleCreditPurchase(session, eventId);
+    return;
+  }
+
+  const bidId = metadata.bid_id;
+  const jobId = metadata.job_id;
+  const craftsmanId = metadata.craftsman_id;
+  const clientId = metadata.client_id;
 
   if (!bidId || !jobId || !craftsmanId || !clientId) {
     console.error("[stripe-webhook] Hiányzó metadata a sessionben", {

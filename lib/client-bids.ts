@@ -8,6 +8,7 @@ export type ClientBidOffer = JobBid & {
   craftsman_avatar_url: string | null;
   craftsman_avg_rating: number | null;
   craftsman_review_count: number;
+  craftsman_is_verified: boolean;
 };
 
 export async function getClientJobOffers(
@@ -41,13 +42,17 @@ export async function getClientJobOffers(
   const craftsmanIds = [...new Set(bids.map((b) => b.craftsman_id))];
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, full_name, avatar_url")
+    .select("id, full_name, avatar_url, is_verified")
     .in("id", craftsmanIds);
 
   const profileMap = new Map(
     (profiles ?? []).map((p) => [
       p.id,
-      { name: p.full_name, avatar_url: p.avatar_url },
+      {
+        name: p.full_name,
+        avatar_url: p.avatar_url,
+        is_verified: Boolean(p.is_verified),
+      },
     ]),
   );
 
@@ -84,6 +89,7 @@ export async function getClientJobOffers(
       craftsman_avatar_url: craftsman?.avatar_url ?? null,
       craftsman_avg_rating: avgRating,
       craftsman_review_count: ratings?.count ?? 0,
+      craftsman_is_verified: craftsman?.is_verified ?? false,
     } as ClientBidOffer;
   });
 }

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { ImageGalleryGrid } from "@/components/gallery/image-gallery-grid";
 import { UserAvatar } from "@/components/profile/user-avatar";
+import { VerifiedBadge } from "@/components/profile/verified-badge";
+import { ReportButton } from "@/components/report/report-button";
 import { CraftsmanReviewsSection } from "@/components/reviews/craftsman-reviews-section";
 import { StarRating } from "@/components/reviews/star-rating";
 import type {
@@ -44,9 +46,19 @@ export function CraftsmanPublicProfileView({
             size="xl"
           />
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl font-black text-zinc-50">
-              {profile.full_name ?? "Fusizó"}
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-black text-zinc-50">
+                {profile.full_name ?? "Fusizó"}
+              </h1>
+              {profile.is_verified && <VerifiedBadge size="md" />}
+            </div>
+            <div className="mt-3">
+              <ReportButton
+                reportedUserId={profile.id}
+                reportedUserName={profile.full_name}
+                contextType="profile"
+              />
+            </div>
             {reviewSummary.averageRating !== null && (
               <div className="mt-2 flex items-center gap-2">
                 <StarRating rating={reviewSummary.averageRating} />
