@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { FeedbackLink } from "@/components/feedback/feedback-link";
+import { BetaCountdown } from "@/components/layout/beta-countdown";
 import { BETA_NOTICE, BETA_NOTICE_STORAGE_KEY } from "@/lib/constants/beta";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
@@ -80,6 +82,12 @@ export function BetaLaunchModal() {
         <p className="mt-4 text-center text-sm leading-relaxed text-zinc-400 sm:text-base">
           {BETA_NOTICE.body}
         </p>
+
+        <BetaCountdown variant="modal" />
+
+        <div className="mt-4 text-center">
+          <FeedbackLink label="Visszajelzés küldése" />
+        </div>
 
         <button
           type="button"

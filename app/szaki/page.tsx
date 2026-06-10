@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { JobCard } from "@/components/jobs/job-card";
 import { PageContainer } from "@/components/layout/page-container";
+import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
+import { ShareSiteButton } from "@/components/share/share-site-button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getMatchedJobsForCraftsman } from "@/lib/craftsman";
 import {
@@ -80,15 +83,19 @@ export default async function SzakiPage() {
         </div>
 
         {jobs.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-800/40 p-12 text-center">
-            <p className="text-lg font-semibold text-zinc-200">
-              Nincs illeszkedő munka
-            </p>
-            <p className="mt-2 text-sm text-zinc-500">
-              Jelenleg nincs olyan nyitott meló a beállított területeden, ami
-              passzol a profilodhoz. Nézz vissza később!
-            </p>
-          </div>
+          <EmptyState
+            title="Nincs illeszkedő munka"
+            description="Jelenleg nincs olyan nyitott meló a beállított területeden, ami passzol a profilodhoz. Kapcsold be az értesítéseket, és oszd meg az oldalt – így hamarabb érkezhet meló a környékre!"
+            actions={[
+              { href: "/szaki/profil", label: "Profil bővítése" },
+              { href: "/szaki/aktivitas", label: "Aktivitásom" },
+            ]}
+          >
+            <div className="mx-auto flex max-w-md flex-col items-center gap-3">
+              <PwaNotificationCta isLoggedIn variant="compact" />
+              <ShareSiteButton message="Fusizok.hu – fusimunkák a környékeden. Nézd meg!" />
+            </div>
+          </EmptyState>
         ) : (
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {jobs.map((job) => (

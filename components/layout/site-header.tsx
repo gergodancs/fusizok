@@ -1,6 +1,7 @@
 import { Hammer, LogIn, LogOut, Search } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
+import { BetaCountdown } from "@/components/layout/beta-countdown";
 import { getAuthContext } from "@/lib/auth/session";
 import type { UserRole } from "@/lib/types/profile";
 
@@ -57,6 +58,7 @@ export async function SiteHeader() {
         </Link>
 
         <nav className="flex items-center gap-2 sm:gap-4">
+          <BetaCountdown variant="badge" />
           {!user && (
             <>
               <Link

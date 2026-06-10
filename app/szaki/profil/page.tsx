@@ -2,7 +2,9 @@ import type { Metadata } from "next";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
 import { DeleteAccountSection } from "@/components/profile/delete-account-section";
 import { ProfileSettingsForm } from "@/components/profile/profile-settings-form";
+import { CraftsmanOnboardingChecklist } from "@/components/craftsman/craftsman-onboarding-checklist";
 import { CraftsmanProfileSettings } from "@/components/craftsman/craftsman-profile-settings";
+import { getCraftsmanOnboardingStatus } from "@/lib/craftsman/onboarding";
 import { KycVerificationSection } from "@/components/craftsman/kyc-verification-section";
 import { CraftsmanReviewsSection } from "@/components/reviews/craftsman-reviews-section";
 import { PageContainer } from "@/components/layout/page-container";
@@ -27,12 +29,14 @@ export default async function SzakiProfilPage() {
     portfolioImages,
     reviewSummary,
     kycInfo,
+    onboarding,
   ] = await Promise.all([
     getUserProfile(user.id),
     getCraftsmanProfileForEdit(user.id),
     getCraftsmanPortfolioImages(user.id),
     getCraftsmanReviewSummary(user.id),
     getCraftsmanKycInfo(user.id),
+    getCraftsmanOnboardingStatus(user.id),
   ]);
 
   return (
@@ -49,7 +53,9 @@ export default async function SzakiProfilPage() {
         </div>
 
         <div className="space-y-6">
-          <div className={`${cardClassName} p-6 sm:p-8`}>
+          <CraftsmanOnboardingChecklist status={onboarding} />
+
+          <div id="avatar" className={`${cardClassName} p-6 sm:p-8`}>
             <AvatarUpload
               userName={profile?.full_name ?? null}
               avatarUrl={profile?.avatar_url ?? null}
@@ -63,7 +69,7 @@ export default async function SzakiProfilPage() {
             />
           </div>
 
-          <div className={`${cardClassName} p-6 sm:p-8`}>
+          <div id="craftsman-settings" className={`${cardClassName} p-6 sm:p-8`}>
             <CraftsmanProfileSettings
               defaultCategories={professions}
               defaultSubCategories={subCategories}

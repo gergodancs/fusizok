@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { RealtimeRefresh } from "@/components/realtime/realtime-refresh";
 import { PageContainer } from "@/components/layout/page-container";
+import { EmptyState } from "@/components/ui/empty-state";
 import { getAuthContext } from "@/lib/auth/session";
 import { getUserConversations } from "@/lib/conversations";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
@@ -36,10 +37,14 @@ export default async function LakosUzenetekPage() {
         </div>
 
         {conversations.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-700 p-12 text-center text-sm text-zinc-500">
-            Még nincs beszélgetésed. Ha egy fusizó pályázik a munkádra, itt
-            tudtok írni egymásnak.
-          </div>
+          <EmptyState
+            title="Még nincs beszélgetésed"
+            description="Ha egy fusizó pályázik a munkádra és megosztod vele a kapcsolatot, itt tudtok írni egymásnak."
+            actions={[
+              { href: "/lakos/ajanlatok", label: "Ajánlatok megtekintése" },
+              { href: "/lakos", label: "Új munka feladása" },
+            ]}
+          />
         ) : (
           <div className="space-y-3">
             {conversations.map((conv) => (

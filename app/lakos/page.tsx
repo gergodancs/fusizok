@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ClientHowItWorks } from "@/components/client/client-how-it-works";
 import { JobPostForm } from "@/components/jobs/job-post-form";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
@@ -30,6 +31,10 @@ export default async function LakosPage() {
             Mondd el, miben kell segítség – összekötünk a környék fusizóival,
             akiknek van szerszámuk és idejük.
           </p>
+        </div>
+
+        <div className="mb-6">
+          <ClientHowItWorks />
         </div>
 
         <div className={`${cardClassName} p-6 sm:p-8`}>

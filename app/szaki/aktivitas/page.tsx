@@ -83,20 +83,30 @@ function ActivitySection({
   description,
   bids,
   emptyText,
+  emptyAction,
 }: {
   title: string;
   description: string;
   bids: BidWithJob[];
   emptyText: string;
+  emptyAction?: { href: string; label: string };
 }) {
   return (
     <section className="mb-10">
       <h2 className="text-xl font-bold text-zinc-100">{title}</h2>
       <p className="mt-1 text-sm text-zinc-500">{description}</p>
       {bids.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-zinc-700 px-4 py-6 text-center text-sm text-zinc-500">
-          {emptyText}
-        </p>
+        <div className="mt-4 rounded-xl border border-dashed border-zinc-700 px-4 py-6 text-center text-sm text-zinc-500">
+          <p>{emptyText}</p>
+          {emptyAction && (
+            <Link
+              href={emptyAction.href}
+              className="mt-3 inline-block text-sm font-medium text-amber-400 hover:text-amber-300"
+            >
+              {emptyAction.label} →
+            </Link>
+          )}
+        </div>
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           {bids.map((bid) => (
@@ -132,6 +142,7 @@ export default async function SzakiAktivitasPage() {
           description="Pályázataid, amelyekre még vársz választ."
           bids={activity.pending}
           emptyText="Nincs függőben lévő pályázatod."
+          emptyAction={{ href: "/szaki", label: "Nyitott munkák böngészése" }}
         />
 
         <ActivitySection
@@ -139,6 +150,7 @@ export default async function SzakiAktivitasPage() {
           description="Pályázatok, ahol a megrendelő megosztotta veled a kapcsolatot."
           bids={activity.accepted}
           emptyText="Még nincs aktív pályázatod."
+          emptyAction={{ href: "/szaki", label: "Pályázz új munkákra" }}
         />
 
         <RealtimeRefresh

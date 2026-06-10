@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ClientHowItWorks } from "@/components/client/client-how-it-works";
 import { OfferCard } from "@/components/client/offer-card";
+import { EmptyState } from "@/components/ui/empty-state";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
 import { getClientJobOffers } from "@/lib/client-bids";
@@ -43,21 +44,21 @@ export default async function LakosAjanlatokPage() {
           </p>
         </div>
 
-        {offers.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-800/40 p-12 text-center">
-            <p className="text-lg font-semibold text-zinc-200">
-              Még nincs ajánlat
-            </p>
-            <p className="mt-2 text-sm text-zinc-500">
-              Amint fusizók pályáznak a munkáidra, itt fognak megjelenni.
-            </p>
-            <Link
-              href="/lakos"
-              className="mt-6 inline-block text-sm font-medium text-amber-400 hover:text-amber-300"
-            >
-              Új munka feladása →
-            </Link>
+        {offers.length === 0 && (
+          <div className="mb-6">
+            <ClientHowItWorks compact />
           </div>
+        )}
+
+        {offers.length === 0 ? (
+          <EmptyState
+            title="Még nincs ajánlat"
+            description="Amint fusizók pályáznak a munkáidra, itt fognak megjelenni. Addig is ellenőrizd, hogy a hirdetésed részletes és jól látható-e."
+            actions={[
+              { href: "/lakos", label: "Új munka feladása" },
+              { href: "/lakos/hirdeteseim", label: "Hirdetéseim" },
+            ]}
+          />
         ) : (
           <div className="space-y-4">
             {offers.map((offer) => (

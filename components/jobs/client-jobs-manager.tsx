@@ -2,6 +2,7 @@
 
 import { Edit, Loader2, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { EmptyState } from "@/components/ui/empty-state";
 import { useState, useTransition } from "react";
 import { cancelJob } from "@/app/actions/jobs";
 import { JobEditModal } from "@/components/jobs/job-edit-modal";
@@ -50,12 +51,11 @@ export function ClientJobsManager({ jobs: initialJobs }: ClientJobsManagerProps)
 
   if (jobs.length === 0) {
     return (
-      <div className={`${cardClassName} p-8 text-center`}>
-        <p className="text-zinc-400">
-          Jelenleg nincs aktív hirdetésed. Adj fel új munkát a „Munka feladása”
-          menüpontban.
-        </p>
-      </div>
+      <EmptyState
+        title="Nincs aktív hirdetésed"
+        description="Adj fel új munkát, hogy a környék fusizói megtaláljanak és pályázhassanak."
+        actions={[{ href: "/lakos", label: "Új munka feladása" }]}
+      />
     );
   }
 
