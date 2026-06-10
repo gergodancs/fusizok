@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSiteUrl } from "@/lib/auth/get-site-url";
 import { parseOAuthRoleParam } from "@/lib/auth/oauth-role";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
+import { maybeSendWelcomeEmail } from "@/lib/auth/welcome-email";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { PRIVACY_VERSION } from "@/lib/privacy";
 import { TERMS_VERSION } from "@/lib/terms";
@@ -66,6 +67,19 @@ export async function GET(request: NextRequest) {
         (typeof user.user_metadata?.role === "string"
           ? user.user_metadata.role
           : undefined);
+
+      if (role === "craftsman" || role === "client") {
+        const welcomeResult = await maybeSendWelcomeEmail(user, role);
+        if (welcomeResult.sent) {
+          console.log("[auth/callback] Üdvözlő e-mail elküldve:", user.email);
+        } else if (welcomeResult.reason !== "already_sent") {
+          console.warn(
+            "[auth/callback] Üdvözlő e-mail nem ment ki:",
+            welcomeResult.reason,
+            welcomeResult.error ?? "",
+          );
+        }
+      }
 
       next = resolvePostLoginPath(next, role);
     }

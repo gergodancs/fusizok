@@ -17,9 +17,7 @@ import { saveCraftsmanLocationFromForm } from "@/lib/location/save-craftsman-loc
 import { isPioneerZoneForCraftsman } from "@/lib/zone-activity";
 import { PRIVACY_VERSION } from "@/lib/privacy";
 import { TERMS_VERSION } from "@/lib/terms";
-import { sendEmail } from "@/lib/email";
-import { buildWelcomeEmailHtml } from "@/lib/notification-templates";
-import { getAppBaseUrl } from "@/lib/stripe/config";
+import { maybeSendWelcomeEmail } from "@/lib/auth/welcome-email";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = {
@@ -136,19 +134,18 @@ export async function register(
   }
 
   if (data.user) {
-    try {
-      await sendEmail({
-        to: email,
-        subject: "Üdvözlünk a Fusizok.hu-n!",
-        html: buildWelcomeEmailHtml({
-          fullName,
-          role,
-          loginUrl: `${getAppBaseUrl()}/login`,
-        }),
-        fromType: "informational",
-      });
-    } catch (welcomeErr) {
-      console.error("[register] Üdvözlő e-mail hiba:", welcomeErr);
+    const welcomeResult = await maybeSendWelcomeEmail(data.user, role, {
+      fullName,
+    });
+
+    if (welcomeResult.sent) {
+      console.log("[register] Üdvözlő e-mail elküldve:", email);
+    } else if (welcomeResult.reason !== "already_sent") {
+      console.warn(
+        "[register] Üdvözlő e-mail nem ment ki:",
+        welcomeResult.reason,
+        welcomeResult.error ?? "",
+      );
     }
   }
 

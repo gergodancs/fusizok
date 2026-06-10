@@ -1,3 +1,8 @@
+import { formatPromoEndDate } from "@/lib/beta/countdown";
+import { SIGNUP_CREDITS_PROMO_ENDS_AT } from "@/lib/constants/beta";
+import { getBidCreditCostRange } from "@/lib/constants/categories";
+import { CRAFTSMAN_SIGNUP_CREDITS } from "@/lib/credits/constants";
+import { formatCreditAmount } from "@/lib/credits/format";
 import { getAppBaseUrl } from "@/lib/stripe/config";
 
 function escapeHtml(value: string): string {
@@ -57,24 +62,82 @@ function emailLayout(
 </html>`;
 }
 
+function buildCraftsmanWelcomeBody(fullName: string): string {
+  const signupCredits = formatCreditAmount(CRAFTSMAN_SIGNUP_CREDITS);
+  const { min, max } = getBidCreditCostRange();
+  const promoEndLabel = formatPromoEndDate(SIGNUP_CREDITS_PROMO_ENDS_AT);
+  const promoNote = promoEndLabel
+    ? ` Az induló egyenleg akciója <strong>${escapeHtml(promoEndLabel)}</strong>-ig érvényes.`
+    : "";
+
+  return `<p>Kedves <strong>${escapeHtml(fullName)}</strong>,</p>
+<p>Örülünk, hogy fusizóként csatlakoztál a <strong>Fusizok.hu</strong> béta közösségéhez. Köszönjük, hogy segítesz kipróbálni a platformot!</p>
+
+<div style="margin: 20px 0; padding: 16px 18px; background: #27272a; border: 1px solid #3f3f46; border-radius: 12px;">
+  <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #fbbf24;">Béta induló egyenleg</p>
+  <p style="margin: 0; color: #fafafa;">
+    <strong>${signupCredits} induló kreditet</strong> kaptál.${promoNote}
+    Béta alatt ezzel pályázhatsz – <strong>nem kell fizetned</strong>, és nem kell most kreditet vásárolnod.
+  </p>
+</div>
+
+<p>Pályázáskor látni fogod a kreditdíjat (kategóriánként kb. ${formatCreditAmount(min)}–${formatCreditAmount(max)} kredit lesz majd normál üzemben). Most az induló egyenlegeddel szabadon próbálkozhatsz.</p>
+
+<p style="margin: 20px 0 8px; font-weight: 700; color: #fafafa;">Első lépések:</p>
+<ol style="margin: 0; padding-left: 20px; color: #d4d4d8;">
+  <li style="margin-bottom: 8px;"><strong>Profil kitöltése</strong> – válaszd ki a tevékenységeidet és a szolgáltatási körzetedet.</li>
+  <li style="margin-bottom: 8px;"><strong>Munkák böngészése</strong> – nézd meg a környékeden feladott feladatokat.</li>
+  <li style="margin-bottom: 8px;"><strong>Első pályázat</strong> – küldj árat, határidőt és rövid üzenetet.</li>
+</ol>
+
+<p style="margin-top: 20px;">Ha elakadsz vagy visszajelzésed van, írj nekünk: <a href="mailto:info@fusizok.hu" style="color: #f59e0b;">info@fusizok.hu</a></p>`;
+}
+
+function buildClientWelcomeBody(fullName: string): string {
+  return `<p>Kedves <strong>${escapeHtml(fullName)}</strong>,</p>
+<p>Örülünk, hogy megrendelőként csatlakoztál a <strong>Fusizok.hu</strong>-hoz.</p>
+
+<div style="margin: 20px 0; padding: 16px 18px; background: #27272a; border: 1px solid #3f3f46; border-radius: 12px;">
+  <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #fbbf24;">Ingyenes munkafeladás</p>
+  <p style="margin: 0; color: #fafafa;">
+    A munka feladása <strong>ingyenes</strong>. Írd le, miben kell segítség – a környék fusizói pályáznak rád árral és határidővel.
+  </p>
+</div>
+
+<p style="margin: 20px 0 8px; font-weight: 700; color: #fafafa;">Így működik:</p>
+<ol style="margin: 0; padding-left: 20px; color: #d4d4d8;">
+  <li style="margin-bottom: 8px;">Leírod a feladatot, helyszínt és kategóriát.</li>
+  <li style="margin-bottom: 8px;">Pályázatok érkeznek – összehasonlíthatod az ajánlatokat.</li>
+  <li style="margin-bottom: 8px;">Kiválasztod a legjobb fusizót, majd chatben egyeztettek.</li>
+</ol>
+
+<p style="margin-top: 20px;">Kérdés esetén írj: <a href="mailto:info@fusizok.hu" style="color: #f59e0b;">info@fusizok.hu</a></p>`;
+}
+
 export function buildWelcomeEmailHtml(params: {
   fullName: string;
   role: "client" | "craftsman";
-  loginUrl: string;
+  actionUrl: string;
+  /** @deprecated Használd az actionUrl mezőt. */
+  loginUrl?: string;
 }): string {
-  const roleText =
+  const actionUrl = params.actionUrl || params.loginUrl || `${getAppBaseUrl()}/login`;
+  const bodyHtml =
     params.role === "craftsman"
-      ? "fusizóként böngészhetsz munkákat, pályázhatsz kredittal, és chatben egyezhetsz meg a megrendelőkkel. A béta időszakban 100 induló kreditet kapsz az első pályázataidhoz."
-      : "megrendelőként feladhatsz munkát, összehasonlíthatod a pályázatokat, és biztonságosan chatelhetsz a szakikkal.";
+      ? buildCraftsmanWelcomeBody(params.fullName)
+      : buildClientWelcomeBody(params.fullName);
 
-  return emailLayout(
-    `Üdvözlünk, ${params.fullName}!`,
-    `<p>Örülünk, hogy csatlakoztál a <strong>Fusizok.hu</strong> közösségéhez.</p>
-<p>Fiókod típusa alapján ${roleText}</p>
-<p>Ha még nem tetted meg, érdemes kitölteni a profilodat, hogy a legjobb találatokat kapd.</p>`,
-    params.loginUrl,
-    "Belépés a Fusizok.hu-ra",
-  );
+  const title =
+    params.role === "craftsman"
+      ? `Üdv fusizóként, ${params.fullName}!`
+      : `Üdvözlünk, ${params.fullName}!`;
+
+  const actionLabel =
+    params.role === "craftsman"
+      ? "Munkák böngészése"
+      : "Munka feladása";
+
+  return emailLayout(title, bodyHtml, actionUrl, actionLabel);
 }
 
 export function buildNewMessageEmailHtml(params: {
