@@ -64,7 +64,7 @@ export function buildWelcomeEmailHtml(params: {
 }): string {
   const roleText =
     params.role === "craftsman"
-      ? "fusizóként böngészhetsz munkákat, pályázhatsz kredittal, és chatben egyezhetsz meg a megrendelőkkel."
+      ? "fusizóként böngészhetsz munkákat, pályázhatsz kredittal, és chatben egyezhetsz meg a megrendelőkkel. A béta időszakban 100 induló kreditet kapsz az első pályázataidhoz."
       : "megrendelőként feladhatsz munkát, összehasonlíthatod a pályázatokat, és biztonságosan chatelhetsz a szakikkal.";
 
   return emailLayout(

@@ -29,12 +29,17 @@ describe("1. Új fusizó regisztráció – ingyenes kredit", () => {
     const craftsmanUpsert = vi.fn().mockResolvedValue({ error: null });
     const profileUpsert = vi.fn().mockResolvedValue({ error: null });
 
+    const grantSignupCredits = vi
+      .fn()
+      .mockResolvedValue({ data: { granted: true, amount: 100 }, error: null });
+
     vi.mocked(createClient).mockResolvedValue({
       from: vi.fn((table: string) => {
         if (table === "profiles") return { upsert: profileUpsert };
         if (table === "craftsman_profiles") return { upsert: craftsmanUpsert };
         return {};
       }),
+      rpc: grantSignupCredits,
     } as never);
 
     await syncUserProfile({

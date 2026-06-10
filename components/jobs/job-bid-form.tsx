@@ -5,8 +5,7 @@ import Link from "next/link";
 import { createJobBid, type BidFormState } from "@/app/actions/bids";
 import { InsufficientCreditsModal } from "@/components/credits/insufficient-credits-modal";
 import { AVAILABILITY_OPTIONS } from "@/lib/availability-options";
-import { BID_CREDIT_COST } from "@/lib/credits/constants";
-import { formatCreditBalance } from "@/lib/credits/format";
+import { formatCreditAmount, formatCreditBalance } from "@/lib/credits/format";
 import { btnPrimaryClassName, inputClassName, labelClassName } from "@/lib/ui-classes";
 
 const initialState: BidFormState = {};
@@ -15,12 +14,14 @@ type JobBidFormProps = {
   jobId: string;
   jobTitle: string;
   creditBalance: number;
+  bidCreditCost: number;
 };
 
 export function JobBidForm({
   jobId,
   jobTitle,
   creditBalance,
+  bidCreditCost,
 }: JobBidFormProps) {
   const [state, formAction, isPending] = useActionState(
     createJobBid,
@@ -28,7 +29,8 @@ export function JobBidForm({
   );
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
 
-  const hasEnoughCredits = creditBalance >= BID_CREDIT_COST;
+  const hasEnoughCredits = creditBalance >= bidCreditCost;
+  const bidCostLabel = formatCreditAmount(bidCreditCost);
 
   useEffect(() => {
     if (state.insufficientCredits) {
@@ -41,7 +43,7 @@ export function JobBidForm({
       <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6 text-center">
         <h3 className="text-lg font-bold text-emerald-300">Pályázat elküldve!</h3>
         <p className="mt-2 text-sm text-zinc-400">
-          A(z) „{jobTitle}” munkára sikeresen pályáztál ({BID_CREDIT_COST}{" "}
+          A(z) „{jobTitle}” munkára sikeresen pályáztál ({bidCostLabel}{" "}
           kredit levonva).
         </p>
         <p className="mt-4 text-sm text-zinc-500">
@@ -77,7 +79,7 @@ export function JobBidForm({
           role="alert"
           className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
         >
-          Nincs elég kredited a pályázathoz ({BID_CREDIT_COST} kredit szükséges).
+          Nincs elég kredited a pályázathoz ({bidCostLabel} kredit szükséges).
           Töltsd fel az egyenleged a továbblépéshez.
         </div>
       )}
@@ -155,12 +157,13 @@ export function JobBidForm({
         >
           {isPending
             ? "Küldés…"
-            : `Pályázat elküldése (${BID_CREDIT_COST} kredit)`}
+            : `Pályázat elküldése (${bidCostLabel} kredit)`}
         </button>
       </form>
 
       {showInsufficientModal && (
         <InsufficientCreditsModal
+          bidCreditCost={bidCreditCost}
           onClose={() => setShowInsufficientModal(false)}
         />
       )}

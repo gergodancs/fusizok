@@ -3,14 +3,16 @@
 import { Coins, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
-import { BID_CREDIT_COST } from "@/lib/credits/constants";
+import { formatCreditAmount } from "@/lib/credits/format";
 import { btnPrimaryClassName, btnSecondaryClassName } from "@/lib/ui-classes";
 
 type InsufficientCreditsModalProps = {
+  bidCreditCost: number;
   onClose: () => void;
 };
 
 export function InsufficientCreditsModal({
+  bidCreditCost,
   onClose,
 }: InsufficientCreditsModalProps) {
   useEffect(() => {
@@ -58,7 +60,8 @@ export function InsufficientCreditsModal({
               </h2>
               <p className="mt-2 text-sm text-zinc-400">
                 Nincs elég kredited a pályázathoz! Töltsd fel az egyenleged a
-                továbblépéshez. Egy pályázat {BID_CREDIT_COST} kreditbe kerül.
+                továbblépéshez. Ehhez a munkához{" "}
+                {formatCreditAmount(bidCreditCost)} kredit szükséges.
               </p>
             </div>
           </div>

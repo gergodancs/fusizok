@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { BetaLaunchModal } from "@/components/layout/beta-launch-modal";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { getMetadataBaseUrl } from "@/lib/seo/site-url";
@@ -86,6 +87,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-zinc-950 font-sans text-zinc-100">
+        <BetaLaunchModal />
         <SiteHeader />
         <main className="flex-1">{children}</main>
         <SiteFooter />

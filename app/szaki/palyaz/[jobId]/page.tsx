@@ -10,8 +10,10 @@ import { getCraftsmanCreditBalance } from "@/lib/credits/balance";
 import { getJobBidStats } from "@/lib/job-bid-stats";
 import {
   formatSubCategoryLabels,
+  getBidCreditCostForCategory,
   getMainCategoryLabel,
 } from "@/lib/constants/categories";
+import { formatCreditAmount } from "@/lib/credits/format";
 import { formatJobLocation } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
@@ -47,6 +49,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
     getCraftsmanCreditBalance(user.id),
   ]);
   const imageUrls = (job.image_urls as string[] | null) ?? [];
+  const bidCreditCost = getBidCreditCostForCategory(job.category);
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -94,11 +97,20 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
         </div>
 
         <div className={`${cardClassName} p-6 sm:p-8`}>
-          <h2 className="mb-6 text-lg font-bold text-zinc-100">Pályázati űrlap</h2>
+          <div className="mb-6 flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-lg font-bold text-zinc-100">Pályázati űrlap</h2>
+            <p className="text-sm text-zinc-500">
+              Pályázati díj:{" "}
+              <span className="font-semibold text-amber-400">
+                {formatCreditAmount(bidCreditCost)} kredit
+              </span>
+            </p>
+          </div>
           <JobBidForm
             jobId={job.id}
             jobTitle={job.title}
             creditBalance={creditBalance}
+            bidCreditCost={bidCreditCost}
           />
         </div>
       </PageContainer>

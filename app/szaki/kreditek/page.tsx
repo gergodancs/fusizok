@@ -5,8 +5,11 @@ import { CreditPurchaseReturn } from "@/components/credits/credit-purchase-retur
 import { PageContainer } from "@/components/layout/page-container";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanCreditBalance } from "@/lib/credits/balance";
-import { BID_CREDIT_COST } from "@/lib/credits/constants";
-import { formatCreditBalance } from "@/lib/credits/format";
+import {
+  getBidCreditCostRange,
+  getCategoriesGroupedByBidCost,
+} from "@/lib/constants/categories";
+import { formatCreditAmount, formatCreditBalance } from "@/lib/credits/format";
 import { CREDIT_PACKS } from "@/lib/credits/packages";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -23,6 +26,8 @@ export default async function KreditekPage({ searchParams }: KreditekPageProps) 
   const { user } = await requireCraftsman("/szaki/kreditek");
   const credits = await getCraftsmanCreditBalance(user.id);
   const { purchased } = await searchParams;
+  const { min, max } = getBidCreditCostRange();
+  const pricingTiers = getCategoriesGroupedByBidCost();
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -36,8 +41,9 @@ export default async function KreditekPage({ searchParams }: KreditekPageProps) 
             Kreditvásárlás
           </h1>
           <p className="mt-2 text-zinc-400">
-            Minden pályázat {BID_CREDIT_COST} kreditbe kerül. Válassz csomagot,
-            töltsd fel az egyenleged, és jelentkezz bátran új munkákra.
+            A pályázati díj a munka kategóriájától függ (
+            {formatCreditAmount(min)}–{formatCreditAmount(max)} kredit). Válassz
+            csomagot, töltsd fel az egyenleged, és jelentkezz bátran új munkákra.
           </p>
         </div>
 
@@ -53,6 +59,21 @@ export default async function KreditekPage({ searchParams }: KreditekPageProps) 
             Sikeres vásárlás! A kreditek hozzáadva az egyenlegedhez.
           </div>
         )}
+
+        <div className={`${cardClassName} mb-8 p-6 sm:p-8`}>
+          <h2 className="text-lg font-bold text-zinc-100">Pályázati díjak kategóriánként</h2>
+          <ul className="mt-4 space-y-4">
+            {pricingTiers.map(({ cost, categories }) => (
+              <li key={cost} className="text-sm text-zinc-400">
+                <span className="font-semibold text-amber-400">
+                  {formatCreditAmount(cost)} kredit
+                </span>
+                <span className="text-zinc-600"> · </span>
+                {categories.map((category) => category.label).join(", ")}
+              </li>
+            ))}
+          </ul>
+        </div>
 
         <div className="grid gap-6 md:grid-cols-3">
           {CREDIT_PACKS.map((pack) => (

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { isAvailabilityDuration } from "@/lib/availability-options";
 import { notifyUser } from "@/app/utils/notifications";
 import { getSessionUser, getUserProfile } from "@/lib/auth/session";
-import { BID_CREDIT_COST } from "@/lib/credits/constants";
+import { getBidCreditCostForCategory } from "@/lib/constants/categories";
 import { buildNewBidEmailHtml } from "@/lib/notification-templates";
 import { getAppBaseUrl } from "@/lib/stripe/config";
 import { createClient } from "@/lib/supabase/server";
@@ -73,13 +73,25 @@ export async function createJobBid(
 
   const supabase = await createClient();
 
+  const { data: jobForCost } = await supabase
+    .from("jobs")
+    .select("category, status")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (!jobForCost || jobForCost.status !== "open") {
+    return { error: "A munka nem elérhető pályázásra." };
+  }
+
+  const creditCost = getBidCreditCostForCategory(jobForCost.category);
+
   const { data, error } = await supabase.rpc("submit_job_bid_with_credits", {
     p_craftsman_id: user.id,
     p_job_id: jobId,
     p_price: price,
     p_message: message,
     p_availability_duration: availability,
-    p_credit_cost: BID_CREDIT_COST,
+    p_credit_cost: creditCost,
   });
 
   if (error) {

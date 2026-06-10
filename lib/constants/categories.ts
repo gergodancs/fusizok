@@ -8,13 +8,19 @@ export type SubActivity = {
 export type MainCategory = {
   id: string;
   label: string;
+  /** Pályázati díj kreditben (kategóriánként változik). */
+  bidCreditCost: number;
   subActivities: SubActivity[];
 };
+
+/** Ismeretlen / régi kategória esetén. */
+export const DEFAULT_BID_CREDIT_COST = 3;
 
 export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "kertgondozas",
     label: "Kertgondozás & Zöldterület",
+    bidCreditCost: 2,
     subActivities: [
       { key: "funyiras", label: "Fűnyírás" },
       { key: "sovenynyiras", label: "Sövénynyírás" },
@@ -29,6 +35,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "festes_dekor",
     label: "Festés, Dekoratív munkák",
+    bidCreditCost: 3,
     subActivities: [
       { key: "szobafestes", label: "Szobafestés" },
       { key: "glett", label: "Glettelés" },
@@ -41,6 +48,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "epitoipar",
     label: "Építőipari kisebb munkák (Kőműves & Burkolás)",
+    bidCreditCost: 5,
     subActivities: [
       { key: "csempezes_jarolapozas", label: "Csempézés / járólapozás" },
       { key: "gipszkartonozas", label: "Gipszkartonozás" },
@@ -53,6 +61,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "villanyszereles",
     label: "Villanyszerelés",
+    bidCreditCost: 3,
     subActivities: [
       { key: "lampa_bekotes_felszereles", label: "Lámpa bekötés / felszerelés" },
       { key: "kapcsolo_konnektor_csere", label: "Kapcsoló / konnektor csere" },
@@ -65,6 +74,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "viz_gaz",
     label: "Víz- és Gázszerelés, Szaniterek",
+    bidCreditCost: 3,
     subActivities: [
       { key: "csaptelep_szifon_csere", label: "Csaptelep / szifon csere" },
       { key: "zuhanyfal_beszereles", label: "Zuhanyfal beszerelés" },
@@ -78,6 +88,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "klima",
     label: "Klíma & Légtechnika",
+    bidCreditCost: 3,
     subActivities: [
       { key: "klimaszereles_uj", label: "Klímaszerelés (új)" },
       { key: "klimatisztitas_fertotlenites", label: "Klímatisztítás / fertőtlenítés" },
@@ -88,6 +99,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "asztalos",
     label: "Asztalos munkák",
+    bidCreditCost: 3,
     subActivities: [
       { key: "egyedi_butor_keszites", label: "Egyedi bútor készítés" },
       { key: "konyhabutor_beepites", label: "Konyhabútor beépítés" },
@@ -100,6 +112,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "lakatos",
     label: "Épületlakatos munkák",
+    bidCreditCost: 5,
     subActivities: [
       { key: "elotetok_keszitese", label: "Előtetők készítése" },
       { key: "keritesek_kapuk_gyartasa", label: "Kerítések / kapuk gyártása" },
@@ -112,6 +125,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "butorosszeszereles",
     label: "Bútorösszeszerelés",
+    bidCreditCost: 1.5,
     subActivities: [
       { key: "sima_butorosszeszereles", label: "Sima bútorösszeszerelés" },
       {
@@ -124,6 +138,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "szallitas",
     label: "Szállítás & Költöztetés",
+    bidCreditCost: 2,
     subActivities: [
       { key: "koltoztetes_rakodokkal", label: "Költöztetés rakodókkal" },
       { key: "tehertaxi_anyag_szallitas", label: "Tehertaxi / anyag szállítás" },
@@ -135,6 +150,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "takaritas",
     label: "Takarítás",
+    bidCreditCost: 1.5,
     subActivities: [
       { key: "takaritas", label: "Takarítás" },
       { key: "ablak_kirakat_tisztitas", label: "Ablak / kirakat tisztítás" },
@@ -144,6 +160,7 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   {
     id: "ezermester",
     label: "Ház körüli ezermester (Handyman)",
+    bidCreditCost: 1.5,
     subActivities: [
       { key: "karnis_fuggonysin", label: "Karnis / függönysín" },
       { key: "kep_tukor_polc_furas", label: "Kép / tükör / polc fúrás" },
@@ -227,4 +244,32 @@ export function subCategoriesOverlap(
 
 export function formatSubCategoryLabels(keys: string[]): string[] {
   return keys.map(getSubActivityLabel);
+}
+
+export function getBidCreditCostForCategory(mainCategoryId: string): number {
+  const normalized = normalizeMainCategoryId(mainCategoryId) ?? mainCategoryId;
+  return mainById.get(normalized)?.bidCreditCost ?? DEFAULT_BID_CREDIT_COST;
+}
+
+export function getBidCreditCostRange(): { min: number; max: number } {
+  const costs = MAIN_CATEGORIES.map((c) => c.bidCreditCost);
+  return { min: Math.min(...costs), max: Math.max(...costs) };
+}
+
+/** Kategóriák csoportosítva pályázati díj szerint (növekvő sorrend). */
+export function getCategoriesGroupedByBidCost(): {
+  cost: number;
+  categories: MainCategory[];
+}[] {
+  const byCost = new Map<number, MainCategory[]>();
+
+  for (const category of MAIN_CATEGORIES) {
+    const list = byCost.get(category.bidCreditCost) ?? [];
+    list.push(category);
+    byCost.set(category.bidCreditCost, list);
+  }
+
+  return [...byCost.entries()]
+    .sort(([a], [b]) => a - b)
+    .map(([cost, categories]) => ({ cost, categories }));
 }

@@ -34,6 +34,20 @@ export async function syncUserProfile(user: User): Promise<void> {
   }
 
   if (role === "craftsman") {
+    const { data: signupCredits, error: signupCreditsError } =
+      await supabase.rpc("grant_craftsman_signup_credits");
+
+    if (signupCreditsError) {
+      console.error(
+        "Induló kredit hiba:",
+        signupCreditsError.message,
+      );
+    } else if (signupCredits?.granted) {
+      console.log(
+        "[syncUserProfile] Béta induló kredit jóváírva:",
+        signupCredits.amount,
+      );
+    }
     const { error: craftsmanError } = await supabase
       .from("craftsman_profiles")
       .upsert(
