@@ -123,13 +123,22 @@ export const MAIN_CATEGORIES: MainCategory[] = [
   },
   {
     id: "szallitas",
-    label: "Szállítás, Költöztetés & Tisztítás",
+    label: "Szállítás & Költöztetés",
     subActivities: [
       { key: "koltoztetes_rakodokkal", label: "Költöztetés rakodókkal" },
       { key: "tehertaxi_anyag_szallitas", label: "Tehertaxi / anyag szállítás" },
       { key: "lomtalanitas_hagyatek", label: "Lomtalanítás / hagyaték" },
       { key: "sitt_elszallitas", label: "Sitt elszállítás" },
       { key: "egyeb_szallitas", label: "Egyéb szállítás" },
+    ],
+  },
+  {
+    id: "takaritas",
+    label: "Takarítás",
+    subActivities: [
+      { key: "takaritas", label: "Takarítás" },
+      { key: "ablak_kirakat_tisztitas", label: "Ablak / kirakat tisztítás" },
+      { key: "egyeb_takaritas", label: "Egyéb takarítás" },
     ],
   },
   {
