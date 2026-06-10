@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { HybridLocationPicker } from "@/components/location/hybrid-location-picker";
-import { ServiceRadiusSlider } from "@/components/location/service-radius-slider";
+import { FixedLocationPicker } from "@/components/location/fixed-location-picker";
+import { ServiceRadiusSelect } from "@/components/location/service-radius-select";
 import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
-import type { HybridLocationValue } from "@/lib/location/types";
 
 type CraftsmanLocationFieldsProps = {
   defaultLocation: CraftsmanLocationEdit;
@@ -13,30 +11,15 @@ type CraftsmanLocationFieldsProps = {
 export function CraftsmanLocationFields({
   defaultLocation,
 }: CraftsmanLocationFieldsProps) {
-  const [hasLocation, setHasLocation] = useState(
-    defaultLocation.mode !== null ||
-      Boolean(defaultLocation.county && defaultLocation.city),
-  );
-
-  function handleLocationChange(value: HybridLocationValue) {
-    setHasLocation(value.mode !== null);
-  }
-
   return (
     <div className="space-y-4">
-      <HybridLocationPicker
-        label="Hol vállalsz munkát?"
+      <FixedLocationPicker
+        label="Szolgáltatási bázis"
         countyName={defaultLocation.county}
         cityName={defaultLocation.city}
-        latitude={defaultLocation.latitude}
-        longitude={defaultLocation.longitude}
-        locationMode={defaultLocation.mode}
-        onChange={handleLocationChange}
       />
 
-      {hasLocation && (
-        <ServiceRadiusSlider defaultValue={defaultLocation.serviceRadiusKm} />
-      )}
+      <ServiceRadiusSelect defaultValue={defaultLocation.serviceRadiusKm} />
     </div>
   );
 }

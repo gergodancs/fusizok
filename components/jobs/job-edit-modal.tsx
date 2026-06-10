@@ -3,7 +3,7 @@
 import { Loader2, X } from "lucide-react";
 import { useActionState, useEffect } from "react";
 import { updateJob, type JobMutationState } from "@/app/actions/jobs";
-import { HybridLocationPicker } from "@/components/location/hybrid-location-picker";
+import { FixedLocationPicker } from "@/components/location/fixed-location-picker";
 import type { Job } from "@/lib/types/job";
 import {
   btnPrimaryClassName,
@@ -104,8 +104,8 @@ export function JobEditModal({ job, onClose, onSuccess }: JobEditModalProps) {
             />
           </div>
 
-          <HybridLocationPicker
-            label="Hol van a munka?"
+          <FixedLocationPicker
+            label="Munkavégzés helyszíne"
             countyName={job.county ?? ""}
             cityName={job.city ?? job.zip_code ?? ""}
           />

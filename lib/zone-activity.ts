@@ -34,18 +34,9 @@ export async function countOpenJobsNearCraftsmanZone(
 ): Promise<number | null> {
   const supabase = await getStatsClient();
 
-  const lat =
-    resolved.mode === "gps" && resolved.latitude !== null
-      ? resolved.latitude
-      : resolved.latitude;
-  const lng =
-    resolved.mode === "gps" && resolved.longitude !== null
-      ? resolved.longitude
-      : resolved.longitude;
-
   const { data, error } = await supabase.rpc("count_open_jobs_for_craftsman_zone", {
-    p_lat: lat,
-    p_lng: lng,
+    p_lat: resolved.latitude,
+    p_lng: resolved.longitude,
     p_radius_km: serviceRadiusKm,
     p_county: resolved.county,
     p_city: resolved.city,

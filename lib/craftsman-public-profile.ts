@@ -14,7 +14,8 @@ export type CraftsmanPublicProfile = {
   professions: string[];
   coverageAreas: CoverageArea[];
   serviceRadiusKm: number;
-  usesGps: boolean;
+  county: string | null;
+  city: string | null;
   portfolioImages: PortfolioImage[];
   reviewSummary: CraftsmanReviewSummary;
 };
@@ -150,7 +151,8 @@ export async function getCraftsmanPublicProfile(
       craftsman?.coverage_zip_codes,
     ),
     serviceRadiusKm: craftsman?.service_radius_km ?? 25,
-    usesGps: Boolean(craftsman?.location_gps),
+    county: craftsman?.county ?? null,
+    city: craftsman?.city ?? null,
     portfolioImages,
     reviewSummary,
   };

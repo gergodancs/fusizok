@@ -1,20 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { ParsedLocation } from "@/lib/location/types";
 
 export async function applyJobLocationGps(
   supabase: SupabaseClient,
   jobId: string,
-  location: ParsedLocation,
+  latitude: number | null,
+  longitude: number | null,
 ): Promise<void> {
-  if (location.mode === "gps") {
+  if (latitude !== null && longitude !== null) {
     const { error } = await supabase.rpc("set_job_location_gps", {
       p_job_id: jobId,
-      p_lat: location.latitude,
-      p_lng: location.longitude,
+      p_lat: latitude,
+      p_lng: longitude,
     });
 
     if (error) {
-      console.error("Job GPS mentési hiba:", error.message);
+      console.error("Job koordináta mentési hiba:", error.message);
     }
     return;
   }
@@ -24,24 +24,25 @@ export async function applyJobLocationGps(
   });
 
   if (error) {
-    console.error("Job GPS törlési hiba:", error.message);
+    console.error("Job koordináta törlési hiba:", error.message);
   }
 }
 
 export async function applyCraftsmanLocationGps(
   supabase: SupabaseClient,
   craftsmanId: string,
-  location: ParsedLocation,
+  latitude: number | null,
+  longitude: number | null,
 ): Promise<void> {
-  if (location.mode === "gps") {
+  if (latitude !== null && longitude !== null) {
     const { error } = await supabase.rpc("set_craftsman_location_gps", {
       p_craftsman_id: craftsmanId,
-      p_lat: location.latitude,
-      p_lng: location.longitude,
+      p_lat: latitude,
+      p_lng: longitude,
     });
 
     if (error) {
-      console.error("Fusizó GPS mentési hiba:", error.message);
+      console.error("Fusizó koordináta mentési hiba:", error.message);
     }
     return;
   }
@@ -51,7 +52,7 @@ export async function applyCraftsmanLocationGps(
   });
 
   if (error) {
-    console.error("Fusizó GPS törlési hiba:", error.message);
+    console.error("Fusizó koordináta törlési hiba:", error.message);
   }
 }
 

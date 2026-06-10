@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { applyCraftsmanLocationGps, applyJobLocationGps } from "@/lib/location/gps-db";
-import { forwardGeocode, reverseGeocode } from "@/lib/location/geocode";
+import {
+  applyCraftsmanLocationGps,
+  applyJobLocationGps,
+} from "@/lib/location/gps-db";
+import { forwardGeocode } from "@/lib/location/geocode";
 import type { ParsedLocation } from "@/lib/location/types";
 
 export type ResolvedLocation = {
@@ -15,19 +18,6 @@ export type ResolvedLocation = {
 export async function resolveLocationForSave(
   location: ParsedLocation,
 ): Promise<ResolvedLocation> {
-  if (location.mode === "gps") {
-    const reversed = await reverseGeocode(location.latitude, location.longitude);
-
-    return {
-      mode: "gps",
-      latitude: location.latitude,
-      longitude: location.longitude,
-      county: reversed?.county ?? null,
-      city: reversed?.city ?? null,
-      label: reversed?.label ?? "GPS – pontos helyszín",
-    };
-  }
-
   const geocoded = await forwardGeocode(location.county, location.city);
 
   return {
@@ -60,17 +50,12 @@ export async function persistJobLocation(
     console.error("Job helyszín frissítési hiba:", error.message);
   }
 
-  if (resolved.latitude !== null && resolved.longitude !== null) {
-    await applyJobLocationGps(supabase, jobId, {
-      mode: "gps",
-      latitude: resolved.latitude,
-      longitude: resolved.longitude,
-      county: null,
-      city: null,
-    });
-  } else if (location.mode === "manual") {
-    await applyJobLocationGps(supabase, jobId, location);
-  }
+  await applyJobLocationGps(
+    supabase,
+    jobId,
+    resolved.latitude,
+    resolved.longitude,
+  );
 
   return resolved;
 }
@@ -100,19 +85,12 @@ export async function persistCraftsmanLocation(
     console.error("Fusizó helyszín frissítési hiba:", error.message);
   }
 
-  if (location.mode === "gps") {
-    await applyCraftsmanLocationGps(supabase, craftsmanId, location);
-  } else if (resolved.latitude !== null && resolved.longitude !== null) {
-    await applyCraftsmanLocationGps(supabase, craftsmanId, {
-      mode: "gps",
-      latitude: resolved.latitude,
-      longitude: resolved.longitude,
-      county: null,
-      city: null,
-    });
-  } else {
-    await applyCraftsmanLocationGps(supabase, craftsmanId, location);
-  }
+  await applyCraftsmanLocationGps(
+    supabase,
+    craftsmanId,
+    resolved.latitude,
+    resolved.longitude,
+  );
 
   return resolved;
 }

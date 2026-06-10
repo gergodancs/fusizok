@@ -67,16 +67,12 @@ export async function getMatchedJobsForCraftsman(
     craftsmanProfile?.coverage_zip_codes,
   );
 
-  const hasGps = Boolean(craftsmanProfile?.location_gps);
-  const hasManual =
+  const hasServiceBase =
     Boolean(craftsmanProfile?.county && craftsmanProfile?.city) ||
+    Boolean(craftsmanProfile?.location_gps) ||
     coverageAreas.length > 0;
 
-  if (
-    !craftsmanProfile ||
-    professions.length === 0 ||
-    (!hasGps && !hasManual)
-  ) {
+  if (!craftsmanProfile || professions.length === 0 || !hasServiceBase) {
     return {
       jobs: [],
       craftsmanProfile: (craftsmanProfile as CraftsmanProfile) ?? null,

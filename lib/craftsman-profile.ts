@@ -23,9 +23,6 @@ export type CraftsmanProfileEdit = {
 };
 
 export function craftsmanHasServiceArea(profile: CraftsmanProfileEdit): boolean {
-  if (profile.location.mode === "gps") {
-    return true;
-  }
   if (profile.location.county && profile.location.city) {
     return true;
   }
@@ -55,7 +52,6 @@ export async function getCraftsmanProfileForEdit(
     data?.coverage_zip_codes,
   );
 
-  const hasGps = Boolean(data?.location_gps);
   const county =
     data?.county?.trim() ||
     coverageAreas[0]?.county ||
@@ -69,7 +65,7 @@ export async function getCraftsmanProfileForEdit(
     professions: normalizeProfessions(data?.profession),
     coverageAreas,
     location: {
-      mode: hasGps ? "gps" : county && city ? "manual" : null,
+      mode: county && city ? "manual" : null,
       latitude: null,
       longitude: null,
       county,

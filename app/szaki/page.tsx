@@ -31,13 +31,11 @@ export default async function SzakiPage() {
   await markOpenJobsSeen(user.id);
 
   const locationLabel =
-    profile.location.mode === "gps"
-      ? `GPS · ${profile.location.serviceRadiusKm} km sugár`
-      : profile.location.county && profile.location.city
-        ? `${formatLocationLabel(profile.location.county, profile.location.city)} · ${profile.location.serviceRadiusKm} km`
-        : profile.coverageAreas
-            .map((area) => formatLocationLabel(area.county, area.place))
-            .join(", ");
+    profile.location.county && profile.location.city
+      ? `${formatLocationLabel(profile.location.county, profile.location.city)} · ${profile.location.serviceRadiusKm} km`
+      : profile.coverageAreas
+          .map((area) => formatLocationLabel(area.county, area.place))
+          .join(", ");
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -49,7 +47,7 @@ export default async function SzakiPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-zinc-400">
             Csak azokat a nyitott melókat látod, amelyek illeszkednek a
-            profilodhoz (GPS sugár vagy kézi terület), és amelyekre még nem
+            profilodhoz (szolgáltatási bázis és hatósugár), és amelyekre még nem
             pályáztál.
           </p>
 

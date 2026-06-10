@@ -48,11 +48,8 @@ export async function createJob(
   const draft: JobFormDraft = {
     title: title ?? "",
     category: category ?? "",
-    locationMode: location?.mode ?? null,
-    latitude: location?.mode === "gps" ? location.latitude : null,
-    longitude: location?.mode === "gps" ? location.longitude : null,
-    county: location?.mode === "manual" ? location.county : "",
-    city: location?.mode === "manual" ? location.city : "",
+    county: location?.county ?? "",
+    city: location?.city ?? "",
     description: description ?? "",
     required_completion_time: requiredCompletionTime ?? "",
   };
@@ -68,7 +65,7 @@ export async function createJob(
   if (!location) {
     return {
       error:
-        "Kérjük, adja meg a helyszínt GPS-sel vagy válassza ki kézzel a megyét és települést.",
+        "Kérjük, válassza ki a munkavégzés helyszínét (megye és település).",
       draft,
     };
   }
@@ -224,7 +221,7 @@ export async function updateJob(
   if (!location) {
     return {
       error:
-        "Kérjük, adja meg a helyszínt GPS-sel vagy válassza ki kézzel a megyét és települést.",
+        "Kérjük, válassza ki a munkavégzés helyszínét (megye és település).",
     };
   }
 

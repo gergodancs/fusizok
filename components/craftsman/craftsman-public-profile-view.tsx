@@ -68,10 +68,11 @@ export function CraftsmanPublicProfileView({
                 ))}
               </div>
             )}
-            {(profile.usesGps || profile.coverageAreas.length > 0) && (
+            {((profile.county && profile.city) ||
+              profile.coverageAreas.length > 0) && (
               <p className="mt-3 text-sm text-zinc-500">
-                {profile.usesGps
-                  ? `GPS alapú vállalási körzet · ${profile.serviceRadiusKm} km`
+                {profile.county && profile.city
+                  ? `Szolgáltatási bázis: ${formatLocationLabel(profile.county, profile.city)} · ${profile.serviceRadiusKm} km`
                   : `Területek: ${profile.coverageAreas
                       .map((area) =>
                         formatLocationLabel(area.county, area.place),

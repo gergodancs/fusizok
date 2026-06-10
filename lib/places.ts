@@ -146,10 +146,6 @@ export function formatJobLocation(job: {
     return formatLocationLabel(area.county, area.place);
   }
 
-  if (job.location_gps) {
-    return "GPS – pontos helyszín";
-  }
-
   return placeName?.trim() || "—";
 }
 

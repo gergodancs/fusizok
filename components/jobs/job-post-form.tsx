@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { createJob, type JobFormState } from "@/app/actions/jobs";
-import { HybridLocationPicker } from "@/components/location/hybrid-location-picker";
+import { FixedLocationPicker } from "@/components/location/fixed-location-picker";
 import { COMPLETION_TIME_OPTIONS } from "@/lib/completion-time-options";
 import { JOB_CATEGORIES } from "@/lib/job-categories";
 import {
@@ -20,9 +20,6 @@ const initialState: JobFormState = {};
 const emptyDraft: JobFormDraft = {
   title: "",
   category: "",
-  locationMode: null,
-  latitude: null,
-  longitude: null,
   county: "",
   city: "",
   description: "",
@@ -171,19 +168,13 @@ export function JobPostForm() {
         </select>
       </div>
 
-      <HybridLocationPicker
-        label="Hol van a munka?"
+      <FixedLocationPicker
+        label="Munkavégzés helyszíne"
         countyName={draft.county}
         cityName={draft.city}
-        latitude={draft.latitude}
-        longitude={draft.longitude}
-        locationMode={draft.locationMode}
         onChange={(value) =>
           setDraft((d) => ({
             ...d,
-            locationMode: value.mode,
-            latitude: value.latitude,
-            longitude: value.longitude,
             county: value.county,
             city: value.city,
           }))
