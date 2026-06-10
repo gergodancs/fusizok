@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
+import { DeleteAccountSection } from "@/components/profile/delete-account-section";
+import { ProfileSettingsForm } from "@/components/profile/profile-settings-form";
 import { PageContainer } from "@/components/layout/page-container";
 import { getAuthContext } from "@/lib/auth/session";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
-  title: "Profil – fusizok.hu",
+  title: "Profil",
   description: "Profilkép és beállítások.",
 };
 
@@ -30,24 +32,26 @@ export default async function LakosProfilPage() {
             Beállítások
           </h1>
           <p className="mt-2 text-zinc-400">
-            Állítsd be a profilképedet – a fusizók is látni fogják a chatben.
+            Személyes adatok, profilkép és fiókkezelés.
           </p>
         </div>
 
-        <div className={`${cardClassName} p-6 sm:p-8`}>
-          <AvatarUpload
-            userName={profile?.full_name ?? null}
-            avatarUrl={profile?.avatar_url ?? null}
-          />
+        <div className="space-y-6">
+          <div className={`${cardClassName} p-6 sm:p-8`}>
+            <AvatarUpload
+              userName={profile?.full_name ?? null}
+              avatarUrl={profile?.avatar_url ?? null}
+            />
+          </div>
 
-          {profile?.full_name && (
-            <p className="mt-6 border-t border-zinc-700 pt-6 text-sm text-zinc-400">
-              Név:{" "}
-              <span className="font-medium text-zinc-200">
-                {profile.full_name}
-              </span>
-            </p>
-          )}
+          <div className={`${cardClassName} p-6 sm:p-8`}>
+            <ProfileSettingsForm
+              defaultFullName={profile?.full_name ?? ""}
+              defaultPhone={profile?.phone ?? ""}
+            />
+          </div>
+
+          <DeleteAccountSection />
         </div>
       </PageContainer>
     </div>

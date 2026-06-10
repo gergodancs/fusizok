@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { AvatarUpload } from "@/components/profile/avatar-upload";
+import { DeleteAccountSection } from "@/components/profile/delete-account-section";
+import { ProfileSettingsForm } from "@/components/profile/profile-settings-form";
 import { CraftsmanProfileSettings } from "@/components/craftsman/craftsman-profile-settings";
 import { CraftsmanReviewsSection } from "@/components/reviews/craftsman-reviews-section";
 import { PageContainer } from "@/components/layout/page-container";
@@ -47,6 +49,13 @@ export default async function SzakiProfilPage() {
           </div>
 
           <div className={`${cardClassName} p-6 sm:p-8`}>
+            <ProfileSettingsForm
+              defaultFullName={profile?.full_name ?? ""}
+              defaultPhone={profile?.phone ?? ""}
+            />
+          </div>
+
+          <div className={`${cardClassName} p-6 sm:p-8`}>
             <CraftsmanProfileSettings
               defaultCategories={professions}
               defaultLocation={location}
@@ -58,6 +67,8 @@ export default async function SzakiProfilPage() {
           <div className={`${cardClassName} p-6 sm:p-8`}>
             <CraftsmanReviewsSection summary={reviewSummary} />
           </div>
+
+          <DeleteAccountSection />
         </div>
       </PageContainer>
     </div>

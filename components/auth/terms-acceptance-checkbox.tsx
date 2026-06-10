@@ -41,6 +41,16 @@ export function TermsAcceptanceCheckbox({
           onClick={(e) => e.stopPropagation()}
         >
           Fusizók Általános Szerződési Feltételeit
+        </Link>
+        , az{" "}
+        <Link
+          href="/adatvedelem"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-medium text-amber-400 underline-offset-2 hover:text-amber-300 hover:underline"
+          onClick={(e) => e.stopPropagation()}
+        >
+          Adatvédelmi Tájékoztatót
         </Link>{" "}
         és tudomásul veszem, hogy az oldal kizárólag közvetítő platformként
         működik.

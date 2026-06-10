@@ -14,7 +14,14 @@ export function SiteFooter() {
             className="inline-flex items-center gap-1.5 transition hover:text-amber-400"
           >
             <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-            Általános Szerződési Feltételek
+            ÁSZF
+          </Link>
+          <Link
+            href="/adatvedelem"
+            className="inline-flex items-center gap-1.5 transition hover:text-amber-400"
+          >
+            <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
+            Adatvédelem
           </Link>
           <a
             href="mailto:info@fusizok.hu"

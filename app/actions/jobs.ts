@@ -1,8 +1,8 @@
 "use server";
 
-import {
-  isRequiredCompletionTime,
-} from "@/lib/completion-time-options";
+import { revalidatePath } from "next/cache";
+import { isRequiredCompletionTime } from "@/lib/completion-time-options";
+import { getSessionUser } from "@/lib/auth/session";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import type { JobFormDraft } from "@/lib/job-form-draft";
 import { scheduleNotifyMatchingCraftsmen } from "@/lib/location/notify-craftsmen-for-job";
@@ -153,4 +153,130 @@ export async function createJob(
   const pioneerZone = await isPioneerZoneForClientJob(resolved, user.id);
 
   return { success: true, pioneerZone };
+}
+
+export type JobMutationState = {
+  success?: boolean;
+  error?: string;
+};
+
+async function assertClientOwnsJob(
+  jobId: string,
+  allowedStatuses: Array<"open" | "assigned" | "completed" | "cancelled">,
+) {
+  const user = await getSessionUser();
+  if (!user) {
+    return { error: "Bejelentkezés szükséges." as const, user: null, job: null };
+  }
+
+  const supabase = await createClient();
+  const { data: job, error } = await supabase
+    .from("jobs")
+    .select("id, client_id, status, title")
+    .eq("id", jobId)
+    .maybeSingle();
+
+  if (error || !job) {
+    return { error: "A hirdetés nem található." as const, user: null, job: null };
+  }
+
+  if (job.client_id !== user.id) {
+    return {
+      error: "Nincs jogosultságod ehhez a hirdetéshez." as const,
+      user: null,
+      job: null,
+    };
+  }
+
+  if (!allowedStatuses.includes(job.status)) {
+    return {
+      error: "Ez a hirdetés már nem módosítható vagy törölhető." as const,
+      user: null,
+      job: null,
+    };
+  }
+
+  return { error: null, user, job };
+}
+
+export async function updateJob(
+  _prevState: JobMutationState,
+  formData: FormData,
+): Promise<JobMutationState> {
+  const jobId = (formData.get("job_id") as string)?.trim();
+  const title = (formData.get("title") as string)?.trim();
+  const description = (formData.get("description") as string)?.trim();
+  const location = parseLocationFromFormData(formData);
+
+  if (!jobId) {
+    return { error: "Hiányzó hirdetés azonosító." };
+  }
+
+  const ownership = await assertClientOwnsJob(jobId, ["open"]);
+  if (ownership.error || !ownership.user) {
+    return { error: ownership.error ?? "Ismeretlen hiba." };
+  }
+
+  if (!title) {
+    return { error: "Kérjük, adja meg a munka megnevezését." };
+  }
+
+  if (!location) {
+    return {
+      error:
+        "Kérjük, adja meg a helyszínt GPS-sel vagy válassza ki kézzel a megyét és települést.",
+    };
+  }
+
+  if (!description) {
+    return { error: "Kérjük, írja le részletesen a munkát." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("jobs")
+    .update({
+      title,
+      description,
+      county: null,
+      city: null,
+      zip_code: null,
+    })
+    .eq("id", jobId);
+
+  if (error) {
+    console.error("Hirdetés szerkesztési hiba:", error.message);
+    return { error: "A mentés sikertelen. Kérjük, próbálja újra." };
+  }
+
+  await persistJobLocation(supabase, jobId, location);
+
+  revalidatePath("/lakos/hirdeteseim");
+  revalidatePath("/lakos");
+  revalidatePath("/szaki");
+  return { success: true };
+}
+
+export async function cancelJob(jobId: string): Promise<JobMutationState> {
+  const ownership = await assertClientOwnsJob(jobId, ["open", "assigned"]);
+  if (ownership.error) {
+    return { error: ownership.error };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("jobs")
+    .update({ status: "cancelled" })
+    .eq("id", jobId);
+
+  if (error) {
+    console.error("Hirdetés törlési hiba:", error.message);
+    return { error: "A törlés sikertelen. Kérjük, próbálja újra." };
+  }
+
+  revalidatePath("/lakos/hirdeteseim");
+  revalidatePath("/lakos");
+  revalidatePath("/lakos/ajanlatok");
+  revalidatePath("/szaki");
+  return { success: true };
 }

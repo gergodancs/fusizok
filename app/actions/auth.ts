@@ -15,6 +15,7 @@ import {
 import { persistCraftsmanLocation } from "@/lib/location/persist-location";
 import { saveCraftsmanLocationFromForm } from "@/lib/location/save-craftsman-location";
 import { isPioneerZoneForCraftsman } from "@/lib/zone-activity";
+import { PRIVACY_VERSION } from "@/lib/privacy";
 import { TERMS_VERSION } from "@/lib/terms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -104,7 +105,10 @@ export async function register(
   }
 
   if (formData.get("accept_terms") !== "on") {
-    return { error: "A regisztrációhoz el kell fogadnod az ÁSZF-et!" };
+    return {
+      error:
+        "A regisztrációhoz el kell fogadnod az ÁSZF-et és az Adatvédelmi Tájékoztatót!",
+    };
   }
 
   const supabase = await createClient();
@@ -117,6 +121,8 @@ export async function register(
         role,
         terms_accepted_at: new Date().toISOString(),
         terms_version: TERMS_VERSION,
+        privacy_accepted_at: new Date().toISOString(),
+        privacy_version: PRIVACY_VERSION,
       },
     },
   });

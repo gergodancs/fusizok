@@ -3,6 +3,7 @@ import { getSiteUrl } from "@/lib/auth/get-site-url";
 import { parseOAuthRoleParam } from "@/lib/auth/oauth-role";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { PRIVACY_VERSION } from "@/lib/privacy";
 import { TERMS_VERSION } from "@/lib/terms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -34,6 +35,8 @@ export async function GET(request: NextRequest) {
     if (acceptTerms) {
       metadataUpdate.terms_accepted_at = new Date().toISOString();
       metadataUpdate.terms_version = TERMS_VERSION;
+      metadataUpdate.privacy_accepted_at = new Date().toISOString();
+      metadataUpdate.privacy_version = PRIVACY_VERSION;
     }
 
     if (Object.keys(metadataUpdate).length > 0) {

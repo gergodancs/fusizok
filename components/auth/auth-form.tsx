@@ -154,7 +154,9 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
         disabled={isBusy || !canAuthenticate || (isRegisterMode && !termsAccepted)}
         termsAccepted={!isRegisterMode || termsAccepted}
         onTermsRequired={() =>
-          setTermsError("A regisztrációhoz el kell fogadnod az ÁSZF-et!")
+          setTermsError(
+            "A regisztrációhoz el kell fogadnod az ÁSZF-et és az Adatvédelmi Tájékoztatót!",
+          )
         }
       />
 
@@ -266,7 +268,9 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
           onClick={(e) => {
             if (isRegisterMode && !termsAccepted) {
               e.preventDefault();
-              setTermsError("A regisztrációhoz el kell fogadnod az ÁSZF-et!");
+              setTermsError(
+                "A regisztrációhoz el kell fogadnod az ÁSZF-et és az Adatvédelmi Tájékoztatót!",
+              );
             }
           }}
           className={`w-full ${btnPrimaryClassName}`}
@@ -276,7 +280,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
             : !canAuthenticate
               ? "Válassz fiók típust a folytatáshoz"
               : isRegisterMode && !termsAccepted
-                ? "Fogadd el az ÁSZF-et a regisztrációhoz"
+                ? "Fogadd el az ÁSZF-et és az adatvédelmet"
                 : mode === "login"
                   ? "Bejelentkezés"
                   : "Fiók létrehozása"}

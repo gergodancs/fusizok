@@ -8,6 +8,12 @@ import type { ClientNavCounts } from "@/lib/notifications";
 const links = [
   { href: "/lakos", label: "Munka feladása", exact: true, badgeKey: null },
   {
+    href: "/lakos/hirdeteseim",
+    label: "Hirdetéseim",
+    exact: true,
+    badgeKey: null,
+  },
+  {
     href: "/lakos/ajanlatok",
     label: "Ajánlatok",
     exact: false,

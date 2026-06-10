@@ -11,6 +11,11 @@ export type AvatarUploadState = {
   avatarUrl?: string;
 };
 
+export type ProfileUpdateState = {
+  success?: boolean;
+  error?: string;
+};
+
 export async function uploadProfileAvatar(
   _prevState: AvatarUploadState,
   formData: FormData,
@@ -48,4 +53,46 @@ export async function uploadProfileAvatar(
   revalidatePath("/lakos", "layout");
 
   return { success: true, avatarUrl: url };
+}
+
+export async function updateProfile(
+  _prevState: ProfileUpdateState,
+  formData: FormData,
+): Promise<ProfileUpdateState> {
+  const user = await getSessionUser();
+  if (!user) {
+    return { error: "Bejelentkezés szükséges." };
+  }
+
+  const fullName = (formData.get("full_name") as string)?.trim();
+  const phone = (formData.get("phone") as string)?.trim() || null;
+
+  if (!fullName) {
+    return { error: "Kérjük, adja meg a teljes nevét." };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      full_name: fullName,
+      phone,
+    })
+    .eq("id", user.id);
+
+  if (error) {
+    console.error("Profil mentési hiba:", error.message);
+    return { error: "A profil mentése sikertelen." };
+  }
+
+  await supabase.auth.updateUser({
+    data: { full_name: fullName },
+  });
+
+  revalidatePath("/szaki/profil");
+  revalidatePath("/lakos/profil");
+  revalidatePath("/szaki", "layout");
+  revalidatePath("/lakos", "layout");
+
+  return { success: true };
 }
