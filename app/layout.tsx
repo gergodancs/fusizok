@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
+import { getMetadataBaseUrl } from "@/lib/seo/site-url";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,10 +15,54 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const siteDescription =
+  "Találj megbízható szakit a közeledben a legkisebb javításoktól a teljes lakásfelújításig, vagy vállalj fusimunkát szabadon, jutalékok nélkül. Csatlakozz a Fusizók közösségéhez!";
+
+const openGraphDescription =
+  "A platform, ahol a szakértelem találkozik a lakossági igényekkel. Legyen szó egy TV felszereléséről vagy lakásfelújításról.";
+
+const openGraphTitle =
+  "Fusizók – Építsd a vállalkozásod, vagy találd meg a tökéletes szakit!";
+
 export const metadata: Metadata = {
-  title: "fusizok.hu – Barkács segítség a környéken",
-  description:
-    "Van fúród? Másodállásban fusizol? A fusizok.hu összeköti a környék barkácsolóit azokkal, akiknek segítség kell.",
+  metadataBase: new URL(getMetadataBaseUrl()),
+  title: {
+    default: "Fusizók | Szakember Kereső & Másodállású Barkács Munkák",
+    template: "%s | Fusizók",
+  },
+  description: siteDescription,
+  keywords: [
+    "szakember kereső",
+    "fusimunka",
+    "barkácsolás",
+    "lakásfelújítás",
+    "szaki kereső",
+    "másodállás",
+    "gyors javítás",
+    "fusizok",
+  ],
+  openGraph: {
+    type: "website",
+    locale: "hu_HU",
+    url: "/",
+    siteName: "Fusizók",
+    title: openGraphTitle,
+    description: openGraphDescription,
+    images: [
+      {
+        url: "/pwa-icon-512",
+        width: 512,
+        height: 512,
+        alt: "Fusizók logó",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: openGraphTitle,
+    description: openGraphDescription,
+    images: ["/pwa-icon-512"],
+  },
   manifest: "/manifest.json",
   icons: {
     icon: [{ url: "/icons/icon.svg", type: "image/svg+xml" }],

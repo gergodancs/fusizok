@@ -5,7 +5,7 @@ import { TERMS_EFFECTIVE_LABEL } from "@/lib/terms";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
-  title: "Általános Szerződési Feltételek – fusizok.hu",
+  title: "Általános Szerződési Feltételek",
   description:
     "A Fusizók platform Általános Szerződési Feltételei (ÁSZF).",
 };
