@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { login, register, type AuthFormState } from "@/app/actions/auth";
 import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { TermsAcceptanceCheckbox } from "@/components/auth/terms-acceptance-checkbox";
 import { HybridLocationPicker } from "@/components/location/hybrid-location-picker";
 import { ServiceRadiusSlider } from "@/components/location/service-radius-slider";
 import type { UserRole } from "@/lib/types/profile";
@@ -67,6 +68,8 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
   const [craftsmanHasLocation, setCraftsmanHasLocation] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
   const [loginState, loginAction, isLoginPending] = useActionState(
     login,
     initialState,
@@ -81,6 +84,15 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const isPending = mode === "login" ? isLoginPending : isRegisterPending;
   const isBusy = isPending;
   const canAuthenticate = selectedRole !== null;
+  const isRegisterMode = mode === "register";
+  const registerReady = canAuthenticate && termsAccepted;
+
+  function handleModeChange(nextMode: AuthMode) {
+    setMode(nextMode);
+    if (nextMode === "login") {
+      setTermsError(null);
+    }
+  }
 
   return (
     <div className="w-full max-w-md">
@@ -94,7 +106,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
       <div className="mb-8 flex rounded-xl bg-zinc-900 p-1 ring-1 ring-zinc-700">
         <button
           type="button"
-          onClick={() => setMode("login")}
+          onClick={() => handleModeChange("login")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition ${
             mode === "login"
               ? "bg-zinc-800 text-zinc-100 shadow-sm"
@@ -105,7 +117,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
         </button>
         <button
           type="button"
-          onClick={() => setMode("register")}
+          onClick={() => handleModeChange("register")}
           className={`flex-1 rounded-lg py-2.5 text-sm font-medium transition ${
             mode === "register"
               ? "bg-zinc-800 text-zinc-100 shadow-sm"
@@ -116,10 +128,34 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
         </button>
       </div>
 
+      {isRegisterMode && (
+        <div className="mb-4 space-y-2">
+          <TermsAcceptanceCheckbox
+            checked={termsAccepted}
+            onChange={(checked) => {
+              setTermsAccepted(checked);
+              if (checked) {
+                setTermsError(null);
+              }
+            }}
+            disabled={!canAuthenticate}
+          />
+          {termsError && (
+            <p className="text-sm text-red-400" role="alert">
+              {termsError}
+            </p>
+          )}
+        </div>
+      )}
+
       <GoogleSignInButton
         redirectTo={redirectTo}
         role={selectedRole ?? undefined}
-        disabled={isBusy || !canAuthenticate}
+        disabled={isBusy || !canAuthenticate || (isRegisterMode && !termsAccepted)}
+        termsAccepted={!isRegisterMode || termsAccepted}
+        onTermsRequired={() =>
+          setTermsError("A regisztrációhoz el kell fogadnod az ÁSZF-et!")
+        }
       />
 
       <div className="relative my-6">
@@ -134,6 +170,9 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="redirect" value={redirectTo} />
         {selectedRole && <input type="hidden" name="role" value={selectedRole} />}
+        {isRegisterMode && termsAccepted && (
+          <input type="hidden" name="accept_terms" value="on" />
+        )}
 
         {(state.error || authError) && (
           <div
@@ -156,7 +195,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
           </div>
         )}
 
-        {mode === "register" && (
+        {isRegisterMode && (
           <div className="space-y-2">
             <label htmlFor="full_name" className={labelClassName}>
               Teljes név
@@ -173,7 +212,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
           </div>
         )}
 
-        {mode === "register" && selectedRole === "craftsman" && (
+        {isRegisterMode && selectedRole === "craftsman" && (
           <div className="space-y-4 rounded-2xl border border-zinc-700 bg-zinc-900/40 p-4">
             <p className="text-sm text-zinc-400">
               Hol vállalnál munkát? GPS-sel pontosan, vagy kézzel is megadhatod
@@ -223,16 +262,24 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
         <button
           type="submit"
-          disabled={isPending || !canAuthenticate}
+          disabled={isPending || (isRegisterMode ? !registerReady : !canAuthenticate)}
+          onClick={(e) => {
+            if (isRegisterMode && !termsAccepted) {
+              e.preventDefault();
+              setTermsError("A regisztrációhoz el kell fogadnod az ÁSZF-et!");
+            }
+          }}
           className={`w-full ${btnPrimaryClassName}`}
         >
           {isPending
             ? "Folyamatban…"
             : !canAuthenticate
               ? "Válassz fiók típust a folytatáshoz"
-              : mode === "login"
-                ? "Bejelentkezés"
-                : "Fiók létrehozása"}
+              : isRegisterMode && !termsAccepted
+                ? "Fogadd el az ÁSZF-et a regisztrációhoz"
+                : mode === "login"
+                  ? "Bejelentkezés"
+                  : "Fiók létrehozása"}
         </button>
       </form>
     </div>

@@ -3,6 +3,7 @@ import { getSiteUrl } from "@/lib/auth/get-site-url";
 import { parseOAuthRoleParam } from "@/lib/auth/oauth-role";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
+import { TERMS_VERSION } from "@/lib/terms";
 import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
@@ -10,6 +11,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const nextParam = searchParams.get("next");
   const roleHint = parseOAuthRoleParam(searchParams.get("role"));
+  const acceptTerms = searchParams.get("accept_terms") === "1";
   const siteUrl = getSiteUrl(request);
 
   let next = nextParam && nextParam.startsWith("/") ? nextParam : "/";
@@ -25,17 +27,26 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const metadataUpdate: Record<string, string> = {};
     if (roleHint) {
-      const { error: roleError } = await supabase.auth.updateUser({
-        data: { role: roleHint },
+      metadataUpdate.role = roleHint;
+    }
+    if (acceptTerms) {
+      metadataUpdate.terms_accepted_at = new Date().toISOString();
+      metadataUpdate.terms_version = TERMS_VERSION;
+    }
+
+    if (Object.keys(metadataUpdate).length > 0) {
+      const { error: metadataError } = await supabase.auth.updateUser({
+        data: metadataUpdate,
       });
 
-      if (roleError) {
+      if (metadataError) {
         console.error(
-          "[auth/callback] Szerepkör metadata frissítési hiba:",
-          roleError.message,
+          "[auth/callback] User metadata frissítési hiba:",
+          metadataError.message,
         );
-      } else {
+      } else if (roleHint) {
         console.log("[auth/callback] Szerepkör beállítva:", roleHint);
       }
     }

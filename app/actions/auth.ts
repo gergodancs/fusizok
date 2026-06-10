@@ -6,6 +6,7 @@ import { parseRoleFormValue } from "@/lib/auth/oauth-role";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { saveCraftsmanLocationFromForm } from "@/lib/location/save-craftsman-location";
+import { TERMS_VERSION } from "@/lib/terms";
 import { createClient } from "@/lib/supabase/server";
 
 export type AuthFormState = {
@@ -93,6 +94,10 @@ export async function register(
     return { error: "A jelszónak legalább 6 karakter hosszúnak kell lennie." };
   }
 
+  if (formData.get("accept_terms") !== "on") {
+    return { error: "A regisztrációhoz el kell fogadnod az ÁSZF-et!" };
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
     email,
@@ -101,6 +106,8 @@ export async function register(
       data: {
         full_name: fullName,
         role,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: TERMS_VERSION,
       },
     },
   });

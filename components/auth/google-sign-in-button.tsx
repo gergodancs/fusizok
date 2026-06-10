@@ -10,6 +10,9 @@ type GoogleSignInButtonProps = {
   /** Regisztrációnál vagy /szaki redirectnél: fusizó/lakos szerepkör */
   role?: UserRole;
   disabled?: boolean;
+  /** Regisztrációnál: ÁSZF elfogadva – callback metadata-hoz */
+  termsAccepted?: boolean;
+  onTermsRequired?: () => void;
 };
 
 function GoogleIcon() {
@@ -53,12 +56,20 @@ export function GoogleSignInButton({
   redirectTo,
   role,
   disabled = false,
+  termsAccepted = true,
+  onTermsRequired,
 }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleGoogleSignIn() {
     if (loading || disabled) return;
+
+    if (!termsAccepted) {
+      onTermsRequired?.();
+      setError("A regisztrációhoz el kell fogadnod az ÁSZF-et!");
+      return;
+    }
 
     setLoading(true);
     setError(null);
@@ -71,6 +82,9 @@ export function GoogleSignInButton({
       const callbackParams = new URLSearchParams({ next: safeNext });
       if (role) {
         callbackParams.set("role", role);
+      }
+      if (termsAccepted) {
+        callbackParams.set("accept_terms", "1");
       }
       const callbackUrl = `${origin}/auth/callback?${callbackParams.toString()}`;
 
