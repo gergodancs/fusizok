@@ -1,3 +1,4 @@
+import { FileText, Mail } from "lucide-react";
 import Link from "next/link";
 
 export function SiteFooter() {
@@ -10,14 +11,16 @@ export function SiteFooter() {
         <nav className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
           <Link
             href="/aszf"
-            className="transition hover:text-amber-400"
+            className="inline-flex items-center gap-1.5 transition hover:text-amber-400"
           >
+            <FileText className="h-4 w-4" strokeWidth={1.75} aria-hidden />
             Általános Szerződési Feltételek
           </Link>
           <a
             href="mailto:info@fusizok.hu"
-            className="transition hover:text-amber-400"
+            className="inline-flex items-center gap-1.5 transition hover:text-amber-400"
           >
+            <Mail className="h-4 w-4" strokeWidth={1.75} aria-hidden />
             info@fusizok.hu
           </a>
         </nav>

@@ -1,9 +1,34 @@
+import {
+  ClipboardList,
+  Hammer,
+  ListChecks,
+  MapPin,
+  Wrench,
+} from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
 import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
 import { getAuthContext } from "@/lib/auth/session";
 import { getPlatformStats } from "@/lib/stats/platform-stats";
+
+const FEATURES = [
+  {
+    icon: Hammer,
+    title: "Kis melók, nagy segítség",
+    text: "Polc fúrás, bútor összerakás, fűnyírás – pont az ilyen hétköznapi munkákra építünk.",
+  },
+  {
+    icon: MapPin,
+    title: "A környékeden",
+    text: "Megye és település alapján találod meg a közelben fusizókat, akiknek van idejük és szerszámuk.",
+  },
+  {
+    icon: ListChecks,
+    title: "Egyszerűen",
+    text: "Leírod, mire van szükséged, a fusizók pedig jelentkeznek. Nincs bonyolult folyamat.",
+  },
+] as const;
 
 export default async function Home() {
   const [{ user, profile }, stats] = await Promise.all([
@@ -36,8 +61,13 @@ export default async function Home() {
 
         <div className="relative mx-auto max-w-6xl px-4 pb-20 pt-16 sm:px-6 sm:pb-28 sm:pt-24">
           <div className="mx-auto max-w-3xl text-center">
-            <p className="mb-4 inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5 text-sm font-semibold text-amber-400">
-              🔧 Barkács segítség a környéken
+            <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-zinc-700/80 bg-zinc-800/50 px-4 py-1.5 text-sm font-medium text-zinc-300">
+              <Wrench
+                className="h-4 w-4 text-amber-500"
+                strokeWidth={1.75}
+                aria-hidden
+              />
+              Barkács segítség a környéken
             </p>
             <h1 className="text-4xl font-black tracking-tight text-zinc-50 sm:text-5xl lg:text-6xl">
               Van egy fúród?{" "}
@@ -55,14 +85,16 @@ export default async function Home() {
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link
                 href="/lakos"
-                className="inline-flex w-full items-center justify-center rounded-2xl bg-amber-500 px-8 py-4 text-base font-bold text-zinc-900 shadow-xl shadow-amber-500/25 transition hover:bg-amber-400 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2.5 rounded-2xl bg-amber-500 px-8 py-4 text-base font-bold text-zinc-900 shadow-xl shadow-amber-500/25 transition hover:bg-amber-400 sm:w-auto"
               >
+                <ClipboardList className="h-5 w-5" strokeWidth={1.75} aria-hidden />
                 Segítséget keresek (Munka feladása)
               </Link>
               <Link
                 href="/szaki"
-                className="inline-flex w-full items-center justify-center rounded-2xl border border-zinc-600 bg-zinc-800 px-8 py-4 text-base font-bold text-zinc-100 shadow-sm transition hover:border-amber-500/50 hover:bg-zinc-700 sm:w-auto"
+                className="inline-flex w-full items-center justify-center gap-2.5 rounded-2xl border border-zinc-600 bg-zinc-800 px-8 py-4 text-base font-bold text-zinc-100 shadow-sm transition hover:border-amber-500/50 hover:bg-zinc-700 sm:w-auto"
               >
+                <Hammer className="h-5 w-5 text-amber-500/90" strokeWidth={1.75} aria-hidden />
                 Fusizni akarok (Munkák böngészése)
               </Link>
             </div>
@@ -72,30 +104,27 @@ export default async function Home() {
 
       <section className="border-t border-zinc-800 bg-zinc-900/50">
         <div className="mx-auto grid max-w-6xl gap-8 px-4 py-16 sm:grid-cols-3 sm:px-6">
-          {[
-            {
-              title: "Kis melók, nagy segítség",
-              text: "Polc fúrás, bútor összerakás, fűnyírás – pont az ilyen hétköznapi munkákra építünk.",
-            },
-            {
-              title: "A környékeden",
-              text: "Megye és település alapján találod meg a közelben fusizókat, akiknek van idejük és szerszámuk.",
-            },
-            {
-              title: "Egyszerűen",
-              text: "Leírod, mire van szükséged, a fusizók pedig jelentkeznek. Nincs bonyolult folyamat.",
-            },
-          ].map((item) => (
-            <div
-              key={item.title}
-              className="rounded-2xl border border-zinc-700/80 bg-zinc-800/60 p-6"
-            >
-              <h3 className="text-lg font-bold text-amber-500">{item.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-                {item.text}
-              </p>
-            </div>
-          ))}
+          {FEATURES.map((item) => {
+            const Icon = item.icon;
+            return (
+              <div
+                key={item.title}
+                className="rounded-2xl border border-zinc-700/80 bg-zinc-800/60 p-6"
+              >
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700/80 bg-zinc-900/60">
+                  <Icon
+                    className="h-5 w-5 text-amber-500"
+                    strokeWidth={1.75}
+                    aria-hidden
+                  />
+                </div>
+                <h3 className="text-lg font-bold text-zinc-100">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                  {item.text}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </section>
     </>

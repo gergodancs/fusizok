@@ -1,3 +1,4 @@
+import { Hammer, LogIn, LogOut, Search } from "lucide-react";
 import Link from "next/link";
 import { logout } from "@/app/actions/auth";
 import { getAuthContext } from "@/lib/auth/session";
@@ -60,14 +61,16 @@ export async function SiteHeader() {
             <>
               <Link
                 href="/lakos"
-                className="hidden rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100 sm:inline-block"
+                className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100 sm:inline-flex"
               >
+                <Search className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 Segítséget keresek
               </Link>
               <Link
                 href="/szaki"
-                className="hidden rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100 sm:inline-block"
+                className="hidden items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium text-zinc-400 transition hover:bg-zinc-800 hover:text-zinc-100 sm:inline-flex"
               >
+                <Hammer className="h-4 w-4" strokeWidth={1.75} aria-hidden />
                 Fusizni akarok
               </Link>
             </>
@@ -98,8 +101,9 @@ export async function SiteHeader() {
               <form action={logout}>
                 <button
                   type="submit"
-                  className="rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-700"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:border-zinc-600 hover:bg-zinc-700"
                 >
+                  <LogOut className="h-4 w-4 text-zinc-400" strokeWidth={1.75} aria-hidden />
                   Kijelentkezés
                 </button>
               </form>
@@ -107,8 +111,9 @@ export async function SiteHeader() {
           ) : (
             <Link
               href="/login"
-              className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-zinc-900 transition hover:bg-amber-400"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500 px-4 py-2 text-sm font-bold text-zinc-900 transition hover:bg-amber-400"
             >
+              <LogIn className="h-4 w-4" strokeWidth={1.75} aria-hidden />
               Bejelentkezés
             </Link>
           )}
