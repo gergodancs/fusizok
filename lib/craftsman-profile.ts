@@ -1,4 +1,5 @@
 import { normalizeProfessions } from "@/lib/craftsman";
+import { normalizeMainCategoryId } from "@/lib/constants/categories";
 import {
   DEFAULT_SERVICE_RADIUS_KM,
   type LocationMode,
@@ -17,6 +18,7 @@ export type CraftsmanLocationEdit = {
 
 export type CraftsmanProfileEdit = {
   professions: string[];
+  subCategories: string[];
   coverageAreas: CoverageArea[];
   location: CraftsmanLocationEdit;
   /** Geokódolt bázispont a DB-ben (location_gps) – régi és új profilokhoz is. */
@@ -45,7 +47,7 @@ export async function getCraftsmanProfileForEdit(
   const { data, error } = await supabase
     .from("craftsman_profiles")
     .select(
-      "profession, coverage_counties, coverage_zip_codes, county, city, location_gps, service_radius_km, bio",
+      "profession, sub_categories, coverage_counties, coverage_zip_codes, county, city, location_gps, service_radius_km, bio",
     )
     .eq("id", userId)
     .maybeSingle();
@@ -69,8 +71,13 @@ export async function getCraftsmanProfileForEdit(
     coverageAreas[0]?.place ||
     "";
 
+  const professions = normalizeProfessions(data?.profession)
+    .map((p) => normalizeMainCategoryId(p) ?? p)
+    .filter(Boolean);
+
   return {
-    professions: normalizeProfessions(data?.profession),
+    professions,
+    subCategories: (data?.sub_categories as string[] | null) ?? [],
     coverageAreas,
     location: {
       mode: county && city ? "manual" : null,
@@ -88,6 +95,7 @@ export async function getCraftsmanProfileForEdit(
 function emptyProfileEdit(): CraftsmanProfileEdit {
   return {
     professions: [],
+    subCategories: [],
     coverageAreas: [],
     location: {
       mode: null,

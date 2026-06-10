@@ -1,14 +1,18 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
+import {
+  parseMainCategoriesFromForm,
+  parseSubCategoriesFromForm,
+  validateCraftsmanCategorySelection,
+} from "@/lib/categories/parse-form";
 import {
   parseLocationFromFormData,
   parseServiceRadiusKm,
 } from "@/lib/location/parse-location-form";
 import { persistCraftsmanLocation } from "@/lib/location/persist-location";
 import { isPioneerZoneForCraftsman } from "@/lib/zone-activity";
-import { revalidatePath } from "next/cache";
-import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import { getSessionUser } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
@@ -28,22 +32,24 @@ export async function updateCraftsmanProfile(
     return { error: "Bejelentkezés szükséges." };
   }
 
-  const selectedCategories = formData
-    .getAll("categories")
-    .map((v) => (v as string).trim())
-    .filter((v) => JOB_CATEGORIES.includes(v as JobCategory));
+  const mainCategoryIds = parseMainCategoriesFromForm(formData);
+  const subCategories = parseSubCategoriesFromForm(formData);
+  const categoryError = validateCraftsmanCategorySelection(
+    mainCategoryIds,
+    subCategories,
+  );
+
+  if (categoryError) {
+    return { error: categoryError };
+  }
 
   const location = parseLocationFromFormData(formData);
   const serviceRadiusKm = parseServiceRadiusKm(formData);
 
-  if (selectedCategories.length === 0) {
-    return { error: "Válassz legalább egy kategóriát." };
-  }
-
   if (!location) {
     return {
       error:
-        "Add meg a helyszínt GPS-sel vagy válaszd ki kézzel a megyét és települést.",
+        "Add meg a szolgáltatási bázist: válaszd ki a megyét és települést.",
     };
   }
 
@@ -58,14 +64,29 @@ export async function updateCraftsmanProfile(
 
   const supabase = await createClient();
 
-  const { error } = await supabase.from("craftsman_profiles").upsert(
-    {
-      id: user.id,
-      profession: selectedCategories.join(", "),
-      bio,
-    },
-    { onConflict: "id" },
-  );
+  const { data: existing } = await supabase
+    .from("craftsman_profiles")
+    .select("id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const profilePayload = {
+    profession: mainCategoryIds.join(", "),
+    sub_categories: subCategories,
+    bio,
+  };
+
+  const { error } = existing
+    ? await supabase
+        .from("craftsman_profiles")
+        .update(profilePayload)
+        .eq("id", user.id)
+    : await supabase.from("craftsman_profiles").insert({
+        id: user.id,
+        ...profilePayload,
+        coverage_counties: [],
+        coverage_zip_codes: [],
+      });
 
   if (error) {
     console.error("Fusizó profil mentési hiba:", error.message);

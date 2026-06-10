@@ -9,6 +9,7 @@ import {
   getCraftsmanProfileForEdit,
 } from "@/lib/craftsman-profile";
 import { markOpenJobsSeen } from "@/lib/notifications";
+import { formatSubCategoryLabels } from "@/lib/constants/categories";
 import { formatLocationLabel } from "@/lib/places";
 import { pageEyebrowClassName } from "@/lib/ui-classes";
 
@@ -23,7 +24,10 @@ export default async function SzakiPage() {
   const { user } = await requireCraftsman("/szaki");
   const profile = await getCraftsmanProfileForEdit(user.id);
 
-  if (profile.professions.length === 0 || !craftsmanHasServiceArea(profile)) {
+  if (
+    profile.subCategories.length === 0 ||
+    !craftsmanHasServiceArea(profile)
+  ) {
     redirect("/szaki/profil");
   }
 
@@ -47,19 +51,26 @@ export default async function SzakiPage() {
           </h1>
           <p className="mt-2 max-w-2xl text-zinc-400">
             Csak azokat a nyitott melókat látod, amelyek illeszkednek a
-            profilodhoz (szolgáltatási bázis és hatósugár), és amelyekre még nem
-            pályáztál.
+            beállított al-tevékenységeidhez, a szolgáltatási bázisodhoz és
+            hatósugaradhoz – és amelyekre még nem pályáztál.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
-            {profile.professions.map((profession) => (
-              <span
-                key={profession}
-                className="rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400"
-              >
-                {profession}
+            {formatSubCategoryLabels(profile.subCategories)
+              .slice(0, 8)
+              .map((label) => (
+                <span
+                  key={label}
+                  className="rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400"
+                >
+                  {label}
+                </span>
+              ))}
+            {profile.subCategories.length > 8 && (
+              <span className="rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
+                +{profile.subCategories.length - 8} további
               </span>
-            ))}
+            )}
             {locationLabel && (
               <span className="rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
                 {locationLabel}

@@ -1,5 +1,5 @@
+import { CategorySkillPicker } from "@/components/categories/category-skill-picker";
 import { CraftsmanLocationFields } from "@/components/craftsman/craftsman-location-fields";
-import { JOB_CATEGORIES } from "@/lib/job-categories";
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
 import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
 import { inputClassName, labelClassName } from "@/lib/ui-classes";
@@ -7,12 +7,14 @@ import { inputClassName, labelClassName } from "@/lib/ui-classes";
 type CraftsmanProfileFieldsProps = {
   defaultLocation: CraftsmanLocationEdit;
   defaultCategories?: string[];
+  defaultSubCategories?: string[];
   defaultBio?: string | null;
 };
 
 export function CraftsmanProfileFields({
   defaultLocation,
   defaultCategories = [],
+  defaultSubCategories = [],
   defaultBio = null,
 }: CraftsmanProfileFieldsProps) {
   return (
@@ -39,26 +41,11 @@ export function CraftsmanProfileFields({
         </p>
       </div>
 
-      <div className="space-y-2">
-        <span className={labelClassName}>Milyen munkákat vállalsz?</span>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {JOB_CATEGORIES.map((category) => (
-            <label
-              key={category}
-              className="flex cursor-pointer items-center gap-2 rounded-xl border border-zinc-600 bg-zinc-800/80 px-3 py-2.5 text-sm text-zinc-200 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-500/10"
-            >
-              <input
-                type="checkbox"
-                name="categories"
-                value={category}
-                defaultChecked={defaultCategories.includes(category)}
-                className="accent-amber-500"
-              />
-              {category}
-            </label>
-          ))}
-        </div>
-      </div>
+      <CategorySkillPicker
+        mode="craftsman"
+        defaultMainCategories={defaultCategories}
+        defaultSubCategories={defaultSubCategories}
+      />
 
       <CraftsmanLocationFields defaultLocation={defaultLocation} />
     </>

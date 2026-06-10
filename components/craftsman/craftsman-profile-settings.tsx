@@ -19,6 +19,7 @@ const initialState: CraftsmanProfileFormState = {};
 type CraftsmanProfileSettingsProps = {
   defaultLocation: CraftsmanLocationEdit;
   defaultCategories?: string[];
+  defaultSubCategories?: string[];
   defaultBio?: string | null;
   portfolioImages: PortfolioImage[];
 };
@@ -26,6 +27,7 @@ type CraftsmanProfileSettingsProps = {
 export function CraftsmanProfileSettings({
   defaultLocation,
   defaultCategories = [],
+  defaultSubCategories = [],
   defaultBio = null,
   portfolioImages,
 }: CraftsmanProfileSettingsProps) {
@@ -53,6 +55,7 @@ export function CraftsmanProfileSettings({
       >
         <CraftsmanProfileFields
           defaultCategories={defaultCategories}
+          defaultSubCategories={defaultSubCategories}
           defaultLocation={defaultLocation}
           defaultBio={defaultBio}
         />

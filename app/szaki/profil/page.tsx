@@ -23,7 +23,7 @@ export default async function SzakiProfilPage() {
   const { user } = await requireCraftsman("/szaki/profil");
   const [
     profile,
-    { professions, location, bio },
+    { professions, subCategories, location, bio },
     portfolioImages,
     reviewSummary,
     kycInfo,
@@ -66,6 +66,7 @@ export default async function SzakiProfilPage() {
           <div className={`${cardClassName} p-6 sm:p-8`}>
             <CraftsmanProfileSettings
               defaultCategories={professions}
+              defaultSubCategories={subCategories}
               defaultLocation={location}
               defaultBio={bio}
               portfolioImages={portfolioImages}

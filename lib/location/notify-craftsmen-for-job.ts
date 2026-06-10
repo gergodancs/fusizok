@@ -1,6 +1,10 @@
 import { after } from "next/server";
 import { notifyUser } from "@/app/utils/notifications";
 import { normalizeProfessions } from "@/lib/craftsman";
+import {
+  getMainCategoryLabel,
+  subCategoriesOverlap,
+} from "@/lib/constants/categories";
 import { buildNewNearbyJobEmailHtml } from "@/lib/notification-templates";
 import { formatJobLocation } from "@/lib/places";
 import { getAppBaseUrl } from "@/lib/stripe/config";
@@ -9,7 +13,14 @@ import type { Job } from "@/lib/types/job";
 
 type NotifyJobPayload = Pick<
   Job,
-  "id" | "title" | "category" | "county" | "city" | "zip_code" | "location_gps"
+  | "id"
+  | "title"
+  | "category"
+  | "sub_categories"
+  | "county"
+  | "city"
+  | "zip_code"
+  | "location_gps"
 >;
 
 export function scheduleNotifyMatchingCraftsmen(job: NotifyJobPayload): void {
@@ -33,7 +44,7 @@ export async function notifyMatchingCraftsmenForJob(
 
   const { data: craftsmen, error } = await admin
     .from("craftsman_profiles")
-    .select("id, profession");
+    .select("id, profession, sub_categories");
 
   if (error) {
     console.error("[notify-job] Fusizók lekérdezési hiba:", error.message);
@@ -42,10 +53,20 @@ export async function notifyMatchingCraftsmenForJob(
 
   const locationLabel = formatJobLocation(job);
   const jobUrl = `${getAppBaseUrl()}/szaki/palyaz/${job.id}`;
+  const jobSubs = job.sub_categories ?? [];
+  const categoryLabel = getMainCategoryLabel(job.category);
 
   for (const craftsman of craftsmen ?? []) {
+    const craftsmanSubs =
+      (craftsman.sub_categories as string[] | null) ?? [];
     const professions = normalizeProfessions(craftsman.profession);
-    if (!professions.includes(job.category)) {
+
+    const skillMatch =
+      craftsmanSubs.length > 0 && jobSubs.length > 0
+        ? subCategoriesOverlap(craftsmanSubs, jobSubs)
+        : professions.includes(job.category);
+
+    if (!skillMatch) {
       continue;
     }
 
@@ -79,7 +100,7 @@ export async function notifyMatchingCraftsmenForJob(
       emailHtml: buildNewNearbyJobEmailHtml({
         jobTitle: job.title,
         locationLabel,
-        category: job.category,
+        category: categoryLabel,
         jobUrl,
       }),
       tag: `nearby-job-${job.id}`,

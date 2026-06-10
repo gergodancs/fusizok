@@ -3,7 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { isRequiredCompletionTime } from "@/lib/completion-time-options";
 import { getSessionUser } from "@/lib/auth/session";
-import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
+import {
+  parseSingleMainCategoryFromForm,
+  parseSubCategoriesFromForm,
+  validateJobCategorySelection,
+} from "@/lib/categories/parse-form";
 import type { JobFormDraft } from "@/lib/job-form-draft";
 import { scheduleNotifyMatchingCraftsmen } from "@/lib/location/notify-craftsmen-for-job";
 import { parseLocationFromFormData } from "@/lib/location/parse-location-form";
@@ -25,6 +29,7 @@ type JobInsert = {
   title: string;
   description: string;
   category: string;
+  sub_categories: string[];
   county: string | null;
   city: string | null;
   zip_code: string | null;
@@ -38,7 +43,8 @@ export async function createJob(
   formData: FormData,
 ): Promise<JobFormState> {
   const title = (formData.get("title") as string)?.trim();
-  const category = formData.get("category") as string;
+  const category = parseSingleMainCategoryFromForm(formData);
+  const subCategories = parseSubCategoriesFromForm(formData);
   const description = (formData.get("description") as string)?.trim();
   const requiredCompletionTime = (
     formData.get("required_completion_time") as string
@@ -58,8 +64,9 @@ export async function createJob(
     return { error: "Kérjük, adja meg a munka megnevezését.", draft };
   }
 
-  if (!category || !JOB_CATEGORIES.includes(category as JobCategory)) {
-    return { error: "Kérjük, válasszon szakma kategóriát.", draft };
+  const categoryError = validateJobCategorySelection(category, subCategories);
+  if (categoryError) {
+    return { error: categoryError, draft };
   }
 
   if (!location) {
@@ -115,7 +122,8 @@ export async function createJob(
     client_id: user.id,
     title,
     description,
-    category,
+    category: category!,
+    sub_categories: subCategories,
     county: null,
     city: null,
     zip_code: null,
@@ -140,7 +148,8 @@ export async function createJob(
   scheduleNotifyMatchingCraftsmen({
     id: insertedJob.id,
     title,
-    category,
+    category: category!,
+    sub_categories: subCategories,
     county: resolved.county,
     city: resolved.city,
     zip_code: resolved.city,

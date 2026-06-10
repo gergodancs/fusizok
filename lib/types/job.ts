@@ -6,6 +6,7 @@ export type Job = {
   title: string;
   description: string;
   category: string;
+  sub_categories?: string[];
   /** Megye neve (kézi megadás) */
   county?: string | null;
   /** Település vagy kerület (kézi megadás) */

@@ -3,6 +3,10 @@ import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import type { JobWithMarketStats } from "@/lib/craftsman";
 import { JOB_STATUS_LABELS } from "@/lib/status-labels";
 import { formatJobLocation } from "@/lib/places";
+import {
+  formatSubCategoryLabels,
+  getMainCategoryLabel,
+} from "@/lib/constants/categories";
 import type { Job } from "@/lib/types/job";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
@@ -45,8 +49,18 @@ export function JobCard({ job }: JobCardProps) {
 
         <div className="mb-4 flex flex-wrap gap-2">
           <span className="inline-flex items-center rounded-lg bg-amber-500/15 px-2.5 py-1 text-xs font-semibold text-amber-400">
-            {job.category}
+            {getMainCategoryLabel(job.category)}
           </span>
+          {formatSubCategoryLabels(job.sub_categories ?? [])
+            .slice(0, 3)
+            .map((label) => (
+              <span
+                key={label}
+                className="inline-flex items-center rounded-lg bg-zinc-700/60 px-2.5 py-1 text-xs font-medium text-zinc-300"
+              >
+                {label}
+              </span>
+            ))}
           <span className="inline-flex items-center rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
             {formatJobLocation(job)}
           </span>

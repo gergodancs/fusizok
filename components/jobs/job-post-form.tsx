@@ -5,7 +5,7 @@ import { useActionState, useEffect, useState } from "react";
 import { createJob, type JobFormState } from "@/app/actions/jobs";
 import { FixedLocationPicker } from "@/components/location/fixed-location-picker";
 import { COMPLETION_TIME_OPTIONS } from "@/lib/completion-time-options";
-import { JOB_CATEGORIES } from "@/lib/job-categories";
+import { CategorySkillPicker } from "@/components/categories/category-skill-picker";
 import {
   clearJobFormDraft,
   loadJobFormDraft,
@@ -143,30 +143,10 @@ export function JobPostForm() {
         />
       </div>
 
-      <div className="space-y-2">
-        <label htmlFor="category" className={labelClassName}>
-          Kategória
-        </label>
-        <select
-          id="category"
-          name="category"
-          required
-          value={draft.category}
-          onChange={(e) =>
-            setDraft((d) => ({ ...d, category: e.target.value }))
-          }
-          className={inputClassName}
-        >
-          <option value="" disabled>
-            Válassz kategóriát…
-          </option>
-          {JOB_CATEGORIES.map((category) => (
-            <option key={category} value={category}>
-              {category}
-            </option>
-          ))}
-        </select>
-      </div>
+      <CategorySkillPicker
+        mode="job"
+        defaultMainCategory={draft.category}
+      />
 
       <FixedLocationPicker
         label="Munkavégzés helyszíne"

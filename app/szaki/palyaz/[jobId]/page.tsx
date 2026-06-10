@@ -8,6 +8,10 @@ import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanCreditBalance } from "@/lib/credits/balance";
 import { getJobBidStats } from "@/lib/job-bid-stats";
+import {
+  formatSubCategoryLabels,
+  getMainCategoryLabel,
+} from "@/lib/constants/categories";
 import { formatJobLocation } from "@/lib/places";
 import { createClient } from "@/lib/supabase/server";
 import { cardClassName, pageEyebrowClassName } from "@/lib/ui-classes";
@@ -28,7 +32,7 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
   const { data: job } = await supabase
     .from("jobs")
     .select(
-      "id, title, description, category, county, city, zip_code, location_gps, status, required_completion_time, image_urls, created_at",
+      "id, title, description, category, sub_categories, county, city, zip_code, location_gps, status, required_completion_time, image_urls, created_at",
     )
     .eq("id", jobId)
     .eq("status", "open")
@@ -58,12 +62,26 @@ export default async function PalyazPage({ params }: PalyazPageProps) {
           <p className={pageEyebrowClassName}>Munka részletei</p>
           <h1 className="mt-2 text-3xl font-black text-zinc-50">{job.title}</h1>
           <p className="mt-2 text-sm text-zinc-500">
-            {job.category} · {formatJobLocation(job)}
+            {getMainCategoryLabel(job.category)} · {formatJobLocation(job)}
             {job.required_completion_time && (
               <> · Határidő: {job.required_completion_time}</>
             )}
           </p>
           <JobMarketStats stats={bidStats} className="mt-3" />
+          {(job.sub_categories as string[] | null)?.length ? (
+            <div className="mt-3 flex flex-wrap gap-2">
+              {formatSubCategoryLabels(job.sub_categories as string[]).map(
+                (label) => (
+                  <span
+                    key={label}
+                    className="rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-300"
+                  >
+                    {label}
+                  </span>
+                ),
+              )}
+            </div>
+          ) : null}
           <p className="mt-4 whitespace-pre-wrap text-zinc-400">
             {job.description}
           </p>
