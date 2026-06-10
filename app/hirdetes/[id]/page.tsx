@@ -110,6 +110,7 @@ export default async function HirdetesPage({ params }: HirdetesPageProps) {
               bidStats={bidStats}
               imageUrls={imageUrls}
               lockedImages={false}
+              postedAt={job.created_at}
             />
           </div>
 
@@ -179,6 +180,7 @@ export default async function HirdetesPage({ params }: HirdetesPageProps) {
               imageCount={publicJob.has_images ? 1 : 0}
               clientLabel={publicJob.client_display_name}
               isPublicView
+              postedAt={publicJob.created_at}
             />
           </div>
 

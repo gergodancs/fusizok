@@ -1,6 +1,7 @@
 import { JobImageGallery } from "@/components/jobs/job-image-gallery";
 import { JobImagesLocked } from "@/components/jobs/job-images-locked";
 import { JobMarketStats } from "@/components/jobs/job-market-stats";
+import { JobPostedAt } from "@/components/jobs/job-posted-at";
 import {
   formatSubCategoryLabels,
   getMainCategoryLabel,
@@ -23,6 +24,7 @@ type JobDetailsContentProps = {
   imageCount?: number;
   clientLabel?: string | null;
   isPublicView?: boolean;
+  postedAt?: string | null;
 };
 
 export function JobDetailsContent({
@@ -38,6 +40,7 @@ export function JobDetailsContent({
   imageCount = 0,
   clientLabel,
   isPublicView = false,
+  postedAt,
 }: JobDetailsContentProps) {
   const subLabels = formatSubCategoryLabels(subCategories);
 
@@ -53,6 +56,7 @@ export function JobDetailsContent({
           <> · Határidő: {requiredCompletionTime}</>
         )}
       </p>
+      <JobPostedAt createdAt={postedAt} className="mt-1 block text-sm text-zinc-500" />
       {clientLabel && isPublicView && (
         <p className="mt-2 text-sm text-zinc-500">
           Megrendelő:{" "}

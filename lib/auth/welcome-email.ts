@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import type { User } from "@supabase/supabase-js";
 import { sendEmail } from "@/lib/email";
 import { buildWelcomeEmailHtml } from "@/lib/notification-templates";
@@ -125,4 +126,28 @@ export async function maybeSendWelcomeEmail(
   await markWelcomeEmailSent(user);
 
   return { sent: true, id: result.id };
+}
+
+/** Üdvözlő e-mail háttérben – ne blokkolja az OAuth redirectet. */
+export function scheduleWelcomeEmail(
+  user: User,
+  role: UserRole,
+  options?: { fullName?: string | null },
+): void {
+  after(async () => {
+    try {
+      const result = await maybeSendWelcomeEmail(user, role, options);
+      if (result.sent) {
+        console.log("[welcome-email] Háttérben elküldve:", user.email);
+      } else if (result.reason !== "already_sent") {
+        console.warn(
+          "[welcome-email] Háttér küldés sikertelen:",
+          result.reason,
+          result.error ?? "",
+        );
+      }
+    } catch (error) {
+      console.error("[welcome-email] Háttér exception:", error);
+    }
+  });
 }
