@@ -3,9 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { parseRoleFormValue } from "@/lib/auth/oauth-role";
-import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
+import {
+  resolvePostLoginPath,
+  withPioneerZoneQuery,
+} from "@/lib/auth/resolve-post-login-path";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
+import {
+  parseLocationFromFormData,
+  parseServiceRadiusKm,
+} from "@/lib/location/parse-location-form";
+import { persistCraftsmanLocation } from "@/lib/location/persist-location";
 import { saveCraftsmanLocationFromForm } from "@/lib/location/save-craftsman-location";
+import { isPioneerZoneForCraftsman } from "@/lib/zone-activity";
 import { TERMS_VERSION } from "@/lib/terms";
 import { createClient } from "@/lib/supabase/server";
 
@@ -120,12 +129,32 @@ export async function register(
   if (data.session && data.user) {
     await syncUserProfile(data.user);
 
+    let pioneerZone = false;
     if (role === "craftsman") {
-      await saveCraftsmanLocationFromForm(supabase, data.user.id, formData);
+      const location = parseLocationFromFormData(formData);
+      if (location) {
+        const serviceRadiusKm = parseServiceRadiusKm(formData);
+        const resolved = await persistCraftsmanLocation(
+          supabase,
+          data.user.id,
+          location,
+          serviceRadiusKm,
+        );
+        pioneerZone = await isPioneerZoneForCraftsman(
+          resolved,
+          serviceRadiusKm,
+        );
+      } else {
+        await saveCraftsmanLocationFromForm(supabase, data.user.id, formData);
+      }
     }
 
     revalidatePath("/", "layout");
-    redirect(resolvePostLoginPath(redirectTo, role));
+    let destination = resolvePostLoginPath(redirectTo, role);
+    if (pioneerZone) {
+      destination = withPioneerZoneQuery(destination, "craftsman");
+    }
+    redirect(destination);
   }
 
   return {

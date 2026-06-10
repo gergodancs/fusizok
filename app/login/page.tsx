@@ -4,6 +4,8 @@ import { AuthForm } from "@/components/auth/auth-form";
 import { PageContainer } from "@/components/layout/page-container";
 import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
 import { getAuthContext } from "@/lib/auth/session";
+import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
+import { getPlatformStats } from "@/lib/stats/platform-stats";
 import { cardClassName } from "@/lib/ui-classes";
 
 export const metadata: Metadata = {
@@ -25,6 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
 
   const redirectTo =
     redirectParam && redirectParam.startsWith("/") ? redirectParam : "/";
+  const stats = await getPlatformStats();
 
   return (
     <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
@@ -47,6 +50,8 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
             </p>
           )}
         </div>
+
+        <PlatformStatsBanner stats={stats} className="mb-6 w-full max-w-md" />
 
         <div className={`w-full max-w-md ${cardClassName} p-6 sm:p-8`}>
           <AuthForm redirectTo={redirectTo} authError={authError} />

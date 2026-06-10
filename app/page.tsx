@@ -1,10 +1,15 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
 import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
 import { getAuthContext } from "@/lib/auth/session";
+import { getPlatformStats } from "@/lib/stats/platform-stats";
 
 export default async function Home() {
-  const { user, profile } = await getAuthContext();
+  const [{ user, profile }, stats] = await Promise.all([
+    getAuthContext(),
+    getPlatformStats(),
+  ]);
 
   if (user && profile?.role === "craftsman") {
     redirect("/szaki");
@@ -44,6 +49,8 @@ export default async function Home() {
             </p>
 
             <PwaNotificationCta />
+
+            <PlatformStatsBanner stats={stats} className="mx-auto mt-8 max-w-xl" />
 
             <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link

@@ -8,11 +8,13 @@ import type { JobFormDraft } from "@/lib/job-form-draft";
 import { scheduleNotifyMatchingCraftsmen } from "@/lib/location/notify-craftsmen-for-job";
 import { parseLocationFromFormData } from "@/lib/location/parse-location-form";
 import { persistJobLocation } from "@/lib/location/persist-location";
+import { isPioneerZoneForClientJob } from "@/lib/zone-activity";
 import { uploadJobImages } from "@/lib/storage/upload-job-images";
 import { createClient } from "@/lib/supabase/server";
 
 export type JobFormState = {
   success?: boolean;
+  pioneerZone?: boolean;
   error?: string;
   code?: "auth-required";
   draft?: JobFormDraft;
@@ -148,5 +150,7 @@ export async function createJob(
     location_gps: resolved.latitude !== null ? true : null,
   });
 
-  return { success: true };
+  const pioneerZone = await isPioneerZoneForClientJob(resolved, user.id);
+
+  return { success: true, pioneerZone };
 }

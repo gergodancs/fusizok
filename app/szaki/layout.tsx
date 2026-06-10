@@ -1,5 +1,7 @@
+import { Suspense } from "react";
 import { CraftsmanNav } from "@/components/layout/craftsman-nav";
 import { PushNotificationPrompt } from "@/components/push/push-notification-prompt";
+import { PioneerZoneFromUrl } from "@/components/zone/pioneer-zone-from-url";
 import { requireCraftsman } from "@/lib/auth/require-craftsman";
 import { getCraftsmanNavCounts } from "@/lib/notifications";
 
@@ -17,6 +19,9 @@ export default async function SzakiLayout({
     <>
       <CraftsmanNav counts={counts} />
       <PushNotificationPrompt userId={user.id} />
+      <Suspense fallback={null}>
+        <PioneerZoneFromUrl />
+      </Suspense>
       {children}
     </>
   );

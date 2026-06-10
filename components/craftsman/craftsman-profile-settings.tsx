@@ -10,6 +10,7 @@ import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile
 import { PortfolioManager } from "@/components/craftsman/portfolio-manager";
 import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
 import type { PortfolioImage } from "@/lib/types/portfolio";
+import { withPioneerZoneQuery } from "@/lib/auth/resolve-post-login-path";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
 const FORM_ID = "craftsman-profile-save-form";
@@ -36,9 +37,12 @@ export function CraftsmanProfileSettings({
 
   useEffect(() => {
     if (state.success) {
-      router.push("/szaki");
+      const destination = state.pioneerZone
+        ? withPioneerZoneQuery("/szaki", "craftsman")
+        : "/szaki";
+      router.push(destination);
     }
-  }, [state.success, router]);
+  }, [state.success, state.pioneerZone, router]);
 
   return (
     <div className="space-y-8">

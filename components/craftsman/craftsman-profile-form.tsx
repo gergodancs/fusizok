@@ -9,6 +9,7 @@ import {
 import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile-fields";
 import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
 import { DEFAULT_SERVICE_RADIUS_KM } from "@/lib/location/types";
+import { withPioneerZoneQuery } from "@/lib/auth/resolve-post-login-path";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
 
 const initialState: CraftsmanProfileFormState = {};
@@ -44,12 +45,16 @@ export function CraftsmanProfileForm({
   useEffect(() => {
     if (state.success) {
       if (redirectOnSuccess) {
-        router.push(redirectOnSuccess);
+        const destination =
+          state.pioneerZone && redirectOnSuccess.startsWith("/szaki")
+            ? withPioneerZoneQuery(redirectOnSuccess, "craftsman")
+            : redirectOnSuccess;
+        router.push(destination);
       } else {
         router.refresh();
       }
     }
-  }, [state.success, redirectOnSuccess, router]);
+  }, [state.success, state.pioneerZone, redirectOnSuccess, router]);
 
   return (
     <form action={formAction} className="mt-6 space-y-5 text-left">

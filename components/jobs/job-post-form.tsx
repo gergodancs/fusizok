@@ -12,6 +12,7 @@ import {
   saveJobFormDraft,
   type JobFormDraft,
 } from "@/lib/job-form-draft";
+import { PioneerZoneModal } from "@/components/zone/pioneer-zone-modal";
 import { btnPrimaryClassName, inputClassName, labelClassName } from "@/lib/ui-classes";
 
 const initialState: JobFormState = {};
@@ -37,6 +38,7 @@ export function JobPostForm() {
   const [draft, setDraft] = useState<JobFormDraft>(emptyDraft);
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [imageCount, setImageCount] = useState(0);
+  const [showPioneerModal, setShowPioneerModal] = useState(false);
 
   useEffect(() => {
     const saved = loadJobFormDraft();
@@ -56,8 +58,11 @@ export function JobPostForm() {
   useEffect(() => {
     if (state.success) {
       clearJobFormDraft();
+      if (state.pioneerZone) {
+        setShowPioneerModal(true);
+      }
     }
-  }, [state.success]);
+  }, [state.success, state.pioneerZone]);
 
   if (!draftLoaded) {
     return (
@@ -69,6 +74,12 @@ export function JobPostForm() {
 
   if (state.success) {
     return (
+      <>
+      <PioneerZoneModal
+        open={showPioneerModal}
+        variant="client"
+        onClose={() => setShowPioneerModal(false)}
+      />
       <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-10 text-center">
         <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 ring-8 ring-emerald-500/10">
           <svg
@@ -104,6 +115,7 @@ export function JobPostForm() {
           Új munkafeladás
         </button>
       </div>
+      </>
     );
   }
 

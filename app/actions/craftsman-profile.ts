@@ -6,6 +6,7 @@ import {
   parseServiceRadiusKm,
 } from "@/lib/location/parse-location-form";
 import { persistCraftsmanLocation } from "@/lib/location/persist-location";
+import { isPioneerZoneForCraftsman } from "@/lib/zone-activity";
 import { revalidatePath } from "next/cache";
 import { JOB_CATEGORIES, type JobCategory } from "@/lib/job-categories";
 import { getSessionUser } from "@/lib/auth/session";
@@ -13,6 +14,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export type CraftsmanProfileFormState = {
   success?: boolean;
+  pioneerZone?: boolean;
   error?: string;
 };
 
@@ -70,15 +72,20 @@ export async function updateCraftsmanProfile(
     return { error: "A profil mentése sikertelen. Próbáld újra." };
   }
 
-  await persistCraftsmanLocation(
+  const resolved = await persistCraftsmanLocation(
     supabase,
     user.id,
     location,
     serviceRadiusKm,
   );
 
+  const pioneerZone = await isPioneerZoneForCraftsman(
+    resolved,
+    serviceRadiusKm,
+  );
+
   revalidatePath("/szaki");
   revalidatePath("/szaki/profil");
   revalidatePath(`/lakos/fusizo/${user.id}`);
-  return { success: true };
+  return { success: true, pioneerZone };
 }
