@@ -1,5 +1,5 @@
 import webpush from "web-push";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, type EmailFromType } from "@/lib/email";
 import { getAppBaseUrl } from "@/lib/stripe/config";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -10,6 +10,8 @@ export type UserNotificationPayload = {
   url?: string;
   emailSubject?: string;
   emailHtml?: string;
+  /** Alapértelmezés: transactional → noreply@fusizok.hu */
+  emailFromType?: EmailFromType;
   tag?: string;
 };
 
@@ -238,7 +240,12 @@ export async function notifyUser(
       `<p>${payload.body}</p><p><a href="${payload.url ?? getAppBaseUrl()}">Megnyitás a Fusizók-on</a></p>`;
 
     if (email) {
-      const emailResult = await sendEmail({ to: email, subject, html });
+      const emailResult = await sendEmail({
+        to: email,
+        subject,
+        html,
+        fromType: payload.emailFromType ?? "transactional",
+      });
       result.emailSent = emailResult.ok;
       if (!emailResult.ok && emailResult.error) {
         result.errors.push(emailResult.error);
