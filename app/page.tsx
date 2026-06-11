@@ -13,7 +13,7 @@ import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
 import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
 import { getAuthContext } from "@/lib/auth/session";
 import { SHOW_PLATFORM_STATS_BANNER } from "@/lib/constants/beta";
-import { listRecentOpenJobsForPublic } from "@/lib/jobs/job-listing";
+import { listGuestHomepageJobPreviews } from "@/lib/jobs/guest-job-previews";
 import {
   CLIENT_FOCUSED_OG_DESCRIPTION,
   CLIENT_FOCUSED_OG_TITLE,
@@ -61,7 +61,7 @@ const HERO_BACKGROUND_IMAGE =
 export default async function Home() {
   const [{ user, profile }, recentJobs, stats] = await Promise.all([
     getAuthContext(),
-    listRecentOpenJobsForPublic(6),
+    listGuestHomepageJobPreviews(10),
     SHOW_PLATFORM_STATS_BANNER ? getPlatformStats() : Promise.resolve(null),
   ]);
 
@@ -142,7 +142,7 @@ export default async function Home() {
       <PublicJobPreviewList
         jobs={recentJobs}
         title="Friss feladások"
-        subtitle="Valós, nyitott munkák a platformon – nézd meg, milyen segítséget keresnek a környékeden."
+        subtitle="Így néznek ki a feladások a platformon – példa és valódi hirdetések együtt. Fusizóként csak a valós munkákra pályázhatsz."
         ctaHref="/lakos"
         ctaLabel="Te is feladod a munkát"
       />

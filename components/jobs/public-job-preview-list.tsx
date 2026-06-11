@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { getMainCategoryLabel } from "@/lib/constants/categories";
-import type { PublicJobPreview } from "@/lib/jobs/job-listing";
+import type { PublicJobPreviewItem } from "@/lib/jobs/placeholder-jobs";
 import { formatPublicJobLocation } from "@/lib/privacy/job-public";
 
 type PublicJobPreviewListProps = {
-  jobs: PublicJobPreview[];
+  jobs: PublicJobPreviewItem[];
   title: string;
   subtitle?: string;
   ctaHref?: string;
@@ -53,9 +53,16 @@ export function PublicJobPreviewList({
                 href={`/hirdetes/${job.id}`}
                 className="group flex h-full flex-col rounded-2xl border border-zinc-700/80 bg-zinc-800/50 p-5 transition hover:border-amber-500/40 hover:bg-zinc-800/80"
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-400/90">
-                  {getMainCategoryLabel(job.category)}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-400/90">
+                    {getMainCategoryLabel(job.category)}
+                  </p>
+                  {job.isPlaceholder ? (
+                    <span className="rounded-md bg-zinc-700/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-zinc-400">
+                      Példa
+                    </span>
+                  ) : null}
+                </div>
                 <h3 className="mt-2 text-lg font-bold text-zinc-100 group-hover:text-amber-300">
                   {job.title}
                 </h3>

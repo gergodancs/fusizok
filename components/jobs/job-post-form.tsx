@@ -1,8 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useActionState, useEffect, useState } from "react";
 import { createJob, type JobFormState } from "@/app/actions/jobs";
+import { GoogleSignInButton } from "@/components/auth/google-sign-in-button";
+import { TermsAcceptanceCheckbox } from "@/components/auth/terms-acceptance-checkbox";
 import { FixedLocationPicker } from "@/components/location/fixed-location-picker";
 import { COMPLETION_TIME_OPTIONS } from "@/lib/completion-time-options";
 import { CategorySkillPicker } from "@/components/categories/category-skill-picker";
@@ -26,8 +27,11 @@ const emptyDraft: JobFormDraft = {
   required_completion_time: "",
 };
 
-export function JobPostForm() {
-  const router = useRouter();
+type JobPostFormProps = {
+  isLoggedIn: boolean;
+};
+
+export function JobPostForm({ isLoggedIn }: JobPostFormProps) {
   const [state, formAction, isPending] = useActionState(
     createJob,
     initialState,
@@ -36,6 +40,8 @@ export function JobPostForm() {
   const [draftLoaded, setDraftLoaded] = useState(false);
   const [imageCount, setImageCount] = useState(0);
   const [showPioneerModal, setShowPioneerModal] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsError, setTermsError] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = loadJobFormDraft();
@@ -46,11 +52,11 @@ export function JobPostForm() {
   }, []);
 
   useEffect(() => {
-    if (state.code === "auth-required" && state.draft) {
-      saveJobFormDraft(state.draft);
-      router.push("/login?redirect=/lakos");
+    if (!draftLoaded) {
+      return;
     }
-  }, [state, router]);
+    saveJobFormDraft(draft);
+  }, [draft, draftLoaded]);
 
   useEffect(() => {
     if (state.success) {
@@ -60,6 +66,10 @@ export function JobPostForm() {
       }
     }
   }, [state.success, state.pioneerZone]);
+
+  function persistDraftBeforeOAuth() {
+    saveJobFormDraft(draft);
+  }
 
   if (!draftLoaded) {
     return (
@@ -72,53 +82,71 @@ export function JobPostForm() {
   if (state.success) {
     return (
       <>
-      <PioneerZoneModal
-        open={showPioneerModal}
-        variant="client"
-        onClose={() => setShowPioneerModal(false)}
-      />
-      <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-10 text-center">
-        <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 ring-8 ring-emerald-500/10">
-          <svg
-            className="h-8 w-8 text-emerald-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-            aria-hidden
+        <PioneerZoneModal
+          open={showPioneerModal}
+          variant="client"
+          onClose={() => setShowPioneerModal(false)}
+        />
+        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-10 text-center">
+          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 ring-8 ring-emerald-500/10">
+            <svg
+              className="h-8 w-8 text-emerald-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+              aria-hidden
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M4.5 12.75l6 6 9-13.5"
+              />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-zinc-50">
+            Sikeres beküldés!
+          </h2>
+          <p className="mx-auto mt-3 max-w-sm text-zinc-400">
+            A melód rögzítve. Hamarosan fusizók jelentkezhetnek rá a környékről.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              clearJobFormDraft();
+              setDraft(emptyDraft);
+              window.location.reload();
+            }}
+            className={`mt-8 ${btnPrimaryClassName}`}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M4.5 12.75l6 6 9-13.5"
-            />
-          </svg>
+            Új munkafeladás
+          </button>
         </div>
-        <h2 className="text-2xl font-bold tracking-tight text-zinc-50">
-          Sikeres beküldés!
-        </h2>
-        <p className="mx-auto mt-3 max-w-sm text-zinc-400">
-          A melód rögzítve. Hamarosan fusizók jelentkezhetnek rá a környékről.
-        </p>
-        <button
-          type="button"
-          onClick={() => {
-            clearJobFormDraft();
-            setDraft(emptyDraft);
-            window.location.reload();
-          }}
-          className={`mt-8 ${btnPrimaryClassName}`}
-        >
-          Új munkafeladás
-        </button>
-      </div>
       </>
     );
   }
 
+  const guestSubmitDisabled =
+    isPending || (!isLoggedIn && !termsAccepted);
+
   return (
     <form action={formAction} className="space-y-6">
-      {state.error && state.code !== "auth-required" && (
+      {!isLoggedIn && (
+        <div
+          className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm leading-relaxed text-amber-100/90"
+          role="status"
+        >
+          <p className="font-semibold text-amber-300">
+            Ingyenes regisztráció a beküldéshez
+          </p>
+          <p className="mt-1 text-amber-100/80">
+            Töltsd ki a munkát, add meg az e-mail címed alul, és egy gombbal
+            feladod – nem kell külön login oldalra menned.
+          </p>
+        </div>
+      )}
+
+      {state.error && (
         <div
           role="alert"
           className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300"
@@ -143,10 +171,7 @@ export function JobPostForm() {
         />
       </div>
 
-      <CategorySkillPicker
-        mode="job"
-        defaultMainCategory={draft.category}
-      />
+      <CategorySkillPicker mode="job" defaultMainCategory={draft.category} />
 
       <FixedLocationPicker
         label="Munkavégzés helyszíne"
@@ -228,12 +253,101 @@ export function JobPostForm() {
         )}
       </div>
 
+      {!isLoggedIn && (
+        <section className="space-y-5 border-t border-zinc-700/80 pt-6">
+          <div>
+            <h2 className="text-lg font-bold text-zinc-100">
+              Utolsó lépés – ingyenes fiók
+            </h2>
+            <p className="mt-1 text-sm text-zinc-500">
+              E-mail és jelszó megadásával beküldöd a munkát. Ha már van fiókod,
+              ugyanitt be is jelentkezel.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="job-post-email" className={labelClassName}>
+              E-mail cím
+            </label>
+            <input
+              id="job-post-email"
+              name="email"
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="nev@email.hu"
+              className={inputClassName}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="job-post-password" className={labelClassName}>
+              Jelszó
+            </label>
+            <input
+              id="job-post-password"
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              autoComplete="new-password"
+              placeholder="Legalább 6 karakter"
+              className={inputClassName}
+            />
+          </div>
+
+          <TermsAcceptanceCheckbox
+            id="job-post-accept-terms"
+            checked={termsAccepted}
+            onChange={(checked) => {
+              setTermsAccepted(checked);
+              if (checked) {
+                setTermsError(null);
+              }
+            }}
+          />
+          {termsAccepted && (
+            <input type="hidden" name="accept_terms" value="on" />
+          )}
+          {termsError && (
+            <p className="text-sm text-red-400" role="alert">
+              {termsError}
+            </p>
+          )}
+
+          <GoogleSignInButton
+            redirectTo="/lakos"
+            role="client"
+            disabled={isPending || !termsAccepted}
+            termsAccepted={termsAccepted}
+            onBeforeSignIn={persistDraftBeforeOAuth}
+            onTermsRequired={() =>
+              setTermsError(
+                "A folytatáshoz el kell fogadnod az ÁSZF-et és az Adatvédelmi Tájékoztatót.",
+              )
+            }
+          />
+        </section>
+      )}
+
       <button
         type="submit"
-        disabled={isPending}
+        disabled={guestSubmitDisabled}
+        onClick={(e) => {
+          if (!isLoggedIn && !termsAccepted) {
+            e.preventDefault();
+            setTermsError(
+              "A munkafeladáshoz el kell fogadnod az ÁSZF-et és az Adatvédelmi Tájékoztatót.",
+            );
+          }
+        }}
         className={`w-full ${btnPrimaryClassName}`}
       >
-        {isPending ? "Beküldés…" : "Beküldés"}
+        {isPending
+          ? "Beküldés…"
+          : isLoggedIn
+            ? "Munka feladása"
+            : "Munka feladása – ingyenes regisztráció"}
       </button>
     </form>
   );

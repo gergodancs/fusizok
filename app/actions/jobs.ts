@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { isRequiredCompletionTime } from "@/lib/completion-time-options";
+import { ensureClientUserFromForm } from "@/lib/auth/ensure-client-user";
 import { getSessionUser } from "@/lib/auth/session";
 import {
   parseSingleMainCategoryFromForm,
@@ -20,7 +21,6 @@ export type JobFormState = {
   success?: boolean;
   pioneerZone?: boolean;
   error?: string;
-  code?: "auth-required";
   draft?: JobFormDraft;
 };
 
@@ -92,17 +92,16 @@ export async function createJob(
   }
 
   const supabase = await createClient();
-  const {
+  let {
     data: { user },
-    error: authError,
   } = await supabase.auth.getUser();
 
-  if (authError || !user) {
-    return {
-      code: "auth-required",
-      error: "A munkafeladáshoz bejelentkezés szükséges.",
-      draft,
-    };
+  if (!user) {
+    const clientAuth = await ensureClientUserFromForm(supabase, formData);
+    if (!clientAuth.ok) {
+      return { error: clientAuth.error, draft };
+    }
+    user = clientAuth.user;
   }
 
   const imageFiles = formData
@@ -157,6 +156,11 @@ export async function createJob(
   });
 
   const pioneerZone = await isPioneerZoneForClientJob(resolved, user.id);
+
+  revalidatePath("/lakos");
+  revalidatePath("/lakos/ajanlatok");
+  revalidatePath("/szaki");
+  revalidatePath("/");
 
   return { success: true, pioneerZone };
 }

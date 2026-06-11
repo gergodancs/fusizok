@@ -25,7 +25,7 @@ export const metadata: Metadata = {
 };
 
 export default async function LakosPage() {
-  const { profile } = await getAuthContext();
+  const { user, profile } = await getAuthContext();
 
   if (profile?.role === "craftsman") {
     redirect("/szaki");
@@ -50,7 +50,7 @@ export default async function LakosPage() {
         </div>
 
         <div className={`${cardClassName} p-6 sm:p-8`}>
-          <JobPostForm />
+          <JobPostForm isLoggedIn={Boolean(user)} />
         </div>
       </PageContainer>
     </div>

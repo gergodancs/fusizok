@@ -13,6 +13,8 @@ type GoogleSignInButtonProps = {
   /** Regisztrációnál: ÁSZF elfogadva – callback metadata-hoz */
   termsAccepted?: boolean;
   onTermsRequired?: () => void;
+  /** OAuth előtt (pl. űrlap draft mentése). */
+  onBeforeSignIn?: () => void;
 };
 
 function GoogleIcon() {
@@ -58,6 +60,7 @@ export function GoogleSignInButton({
   disabled = false,
   termsAccepted = true,
   onTermsRequired,
+  onBeforeSignIn,
 }: GoogleSignInButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +76,7 @@ export function GoogleSignInButton({
 
     setLoading(true);
     setError(null);
+    onBeforeSignIn?.();
 
     try {
       const supabase = createClient();

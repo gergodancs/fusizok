@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { MessageSquare } from "lucide-react";
 import { getFeedbackMailtoUrl } from "@/lib/constants/feedback";
 
@@ -14,10 +15,11 @@ export function FeedbackLink({
   label = "Visszajelzés / hiba / ötlet",
   showIcon = true,
 }: FeedbackLinkProps) {
-  const href =
-    typeof window !== "undefined"
-      ? getFeedbackMailtoUrl(window.location.href)
-      : getFeedbackMailtoUrl();
+  const [href, setHref] = useState(() => getFeedbackMailtoUrl());
+
+  useEffect(() => {
+    setHref(getFeedbackMailtoUrl(window.location.href));
+  }, []);
 
   return (
     <a href={href} className={className}>

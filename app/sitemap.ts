@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { listOpenJobIdsForSitemap } from "@/lib/jobs/job-listing";
+import { listPlaceholderJobIdsForSitemap } from "@/lib/jobs/placeholder-jobs";
 import { getMetadataBaseUrl } from "@/lib/seo/site-url";
 
 export const dynamic = "force-dynamic";
@@ -41,7 +42,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  const openJobs = await listOpenJobIdsForSitemap();
+  const [openJobs, placeholderJobs] = await Promise.all([
+    listOpenJobIdsForSitemap(),
+    Promise.resolve(listPlaceholderJobIdsForSitemap()),
+  ]);
+
   const jobPages: MetadataRoute.Sitemap = openJobs.map((job) => ({
     url: `${baseUrl}/hirdetes/${job.id}`,
     lastModified: new Date(job.created_at),
@@ -49,5 +54,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticPages, ...jobPages];
+  const placeholderPages: MetadataRoute.Sitemap = placeholderJobs.map(
+    (job) => ({
+      url: `${baseUrl}/hirdetes/${job.id}`,
+      lastModified: new Date(job.created_at),
+      changeFrequency: "monthly" as const,
+      priority: 0.55,
+    }),
+  );
+
+  return [...staticPages, ...jobPages, ...placeholderPages];
 }

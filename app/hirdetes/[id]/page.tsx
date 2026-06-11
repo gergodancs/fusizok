@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JobBidForm } from "@/components/jobs/job-bid-form";
 import { JobCraftsmanCta } from "@/components/jobs/job-craftsman-cta";
+import { PlaceholderJobGuestCta } from "@/components/jobs/placeholder-job-guest-cta";
+import { PlaceholderJobNotice } from "@/components/jobs/placeholder-job-notice";
 import { PublicJobPreviewList } from "@/components/jobs/public-job-preview-list";
 import {
   getLocationLabelForJob,
@@ -22,6 +24,11 @@ import {
   getPublicJobListing,
   listSimilarOpenJobs,
 } from "@/lib/jobs/job-listing";
+import {
+  getPlaceholderJobListing,
+  isPlaceholderJobId,
+  listSimilarPlaceholderJobs,
+} from "@/lib/jobs/placeholder-jobs";
 import { buildJobPostingJsonLd } from "@/lib/seo/job-posting";
 import { JsonLd } from "@/lib/seo/json-ld";
 import {
@@ -39,7 +46,8 @@ export async function generateMetadata({
   params,
 }: HirdetesPageProps): Promise<Metadata> {
   const { id } = await params;
-  const job = await getPublicJobListing(id);
+  const placeholderJob = getPlaceholderJobListing(id);
+  const job = placeholderJob ?? (await getPublicJobListing(id));
 
   if (!job) {
     return {
@@ -49,7 +57,9 @@ export async function generateMetadata({
   }
 
   const locationLabel = formatPublicJobLocation(job);
-  const title = buildPublicJobSeoTitle(job.title, locationLabel);
+  const title = placeholderJob
+    ? `${job.title} – példa fusimunka ${locationLabel} területén | Fusizok.hu`
+    : buildPublicJobSeoTitle(job.title, locationLabel);
   const description = `${getMainCategoryLabel(job.category)} – ${locationLabel}. ${job.description.slice(0, 140)}…`;
   const pageUrl = `${getMetadataBaseUrl()}/hirdetes/${job.id}`;
 
@@ -74,6 +84,10 @@ export default async function HirdetesPage({ params }: HirdetesPageProps) {
   const { id } = await params;
   const { user, profile } = await getAuthContext();
   const isCraftsman = Boolean(user && profile?.role === "craftsman");
+
+  if (isCraftsman && isPlaceholderJobId(id)) {
+    notFound();
+  }
 
   if (isCraftsman) {
     const job = await getCraftsmanJobListing(id);
@@ -136,19 +150,79 @@ export default async function HirdetesPage({ params }: HirdetesPageProps) {
     );
   }
 
+  const placeholderJob = getPlaceholderJobListing(id);
+
+  if (placeholderJob) {
+    const similarJobs = listSimilarPlaceholderJobs(
+      placeholderJob.id,
+      placeholderJob.category,
+      4,
+    );
+    const bidStats = {
+      bidCount: placeholderJob.bid_count,
+      contactSharedCount: 0,
+    };
+
+    return (
+      <div className="min-h-full bg-gradient-to-b from-zinc-950 to-zinc-900">
+        <PageContainer narrow>
+          <Link
+            href="/"
+            className="text-sm text-amber-400 hover:text-amber-300"
+          >
+            ← Vissza a főoldalra
+          </Link>
+
+          <div className="mt-4">
+            <PlaceholderJobNotice />
+            <JobDetailsContent
+              title={placeholderJob.title}
+              description={placeholderJob.description}
+              category={placeholderJob.category}
+              subCategories={placeholderJob.sub_categories}
+              locationLabel={formatPublicJobLocation(placeholderJob)}
+              requiredCompletionTime={placeholderJob.required_completion_time}
+              bidStats={bidStats}
+              lockedImages={placeholderJob.has_images}
+              imageCount={placeholderJob.has_images ? 1 : 0}
+              clientLabel={placeholderJob.client_display_name}
+              isPublicView
+              postedAt={placeholderJob.created_at}
+            />
+          </div>
+
+          <PlaceholderJobGuestCta />
+        </PageContainer>
+
+        <PublicJobPreviewList
+          jobs={similarJobs}
+          title="További példa feladások"
+          subtitle="Így néznek ki a különböző kategóriákban feladott munkák a platformon."
+          ctaHref="/lakos"
+          ctaLabel="Saját munka feladása"
+        />
+      </div>
+    );
+  }
+
   const publicJob = await getPublicJobListing(id);
 
   if (!publicJob) {
     notFound();
   }
 
-  const similarJobs = await listSimilarOpenJobs(
-    publicJob.id,
-    publicJob.category,
-    publicJob.city,
-    publicJob.county,
-    4,
-  );
+  const [similarJobs, placeholderSimilar] = await Promise.all([
+    listSimilarOpenJobs(
+      publicJob.id,
+      publicJob.category,
+      publicJob.city,
+      publicJob.county,
+      4,
+    ),
+    Promise.resolve(
+      listSimilarPlaceholderJobs(publicJob.id, publicJob.category, 2),
+    ),
+  ]);
 
   const bidStats = {
     bidCount: publicJob.bid_count,
@@ -188,9 +262,12 @@ export default async function HirdetesPage({ params }: HirdetesPageProps) {
         </PageContainer>
 
         <PublicJobPreviewList
-          jobs={similarJobs}
+          jobs={[
+            ...similarJobs.map((job) => ({ ...job, isPlaceholder: false })),
+            ...placeholderSimilar,
+          ]}
           title="Hasonló feladások"
-          subtitle="További nyitott munkák ugyanabból a kategóriából a közeledben."
+          subtitle="További nyitott és példa munkák ugyanabból a kategóriából."
           ctaHref="/lakos"
           ctaLabel="Saját munka feladása"
         />
