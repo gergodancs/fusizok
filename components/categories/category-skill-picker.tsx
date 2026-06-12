@@ -4,7 +4,9 @@ import { ChevronDown } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
   getMainCategoryIdForSub,
+  getSubActivitiesForMain,
   MAIN_CATEGORIES,
+  OTHER_MAIN_CATEGORY_ID,
 } from "@/lib/constants/categories";
 import { labelClassName } from "@/lib/ui-classes";
 
@@ -52,6 +54,9 @@ export function CategorySkillPicker({
       const nextSubs = new Set(
         [...selectedSubs].filter((sub) => getMainCategoryIdForSub(sub) === mainId),
       );
+      if (checked && mainId === OTHER_MAIN_CATEGORY_ID) {
+        nextSubs.add("egyeb_altalanos");
+      }
       setSelectedMains(nextMains);
       setSelectedSubs(nextSubs);
       setExpandedMains(checked ? new Set([mainId]) : new Set());
@@ -119,6 +124,32 @@ export function CategorySkillPicker({
       }
       return next;
     });
+  }
+
+  function toggleAllSubsForMain(mainId: string) {
+    const subs = getSubActivitiesForMain(mainId);
+    const subKeys = subs.map((sub) => sub.key);
+    const allSelected = subKeys.every((key) => selectedSubs.has(key));
+    const nextSubs = new Set(selectedSubs);
+
+    if (allSelected) {
+      for (const key of subKeys) {
+        nextSubs.delete(key);
+      }
+    } else {
+      for (const key of subKeys) {
+        nextSubs.add(key);
+      }
+    }
+
+    if (!allSelected) {
+      const nextMains = new Set(selectedMains);
+      nextMains.add(mainId);
+      setSelectedMains(nextMains);
+      setExpandedMains((prev) => new Set(prev).add(mainId));
+    }
+
+    setSelectedSubs(nextSubs);
   }
 
   return (
@@ -195,6 +226,19 @@ export function CategorySkillPicker({
               >
                 <div className="overflow-hidden">
                   <div className="border-t border-zinc-700/80 px-3 pb-3 pt-2">
+                    <div className="mb-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => toggleAllSubsForMain(main.id)}
+                        className="rounded-lg border border-zinc-600 bg-zinc-800 px-2.5 py-1 text-xs font-semibold text-zinc-200 transition hover:border-amber-500/50 hover:bg-zinc-700"
+                      >
+                        {main.subActivities.every((sub) =>
+                          selectedSubs.has(sub.key),
+                        )
+                          ? "Kijelölés törlése"
+                          : "Összes"}
+                      </button>
+                    </div>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {main.subActivities.map((sub) => (
                         <label

@@ -8,6 +8,7 @@ import {
   validateCraftsmanCategorySelection,
 } from "@/lib/categories/parse-form";
 import {
+  parseCoverageAreasFromForm,
   parseLocationFromFormData,
   parseServiceRadiusKm,
 } from "@/lib/location/parse-location-form";
@@ -50,6 +51,14 @@ export async function updateCraftsmanProfile(
     return {
       error:
         "Add meg a szolgáltatási bázist: válaszd ki a megyét és települést.",
+    };
+  }
+
+  const coverageAreas = parseCoverageAreasFromForm(formData);
+
+  if (location.county === "Budapest" && coverageAreas.length === 0) {
+    return {
+      error: "Budapestnél jelölj be legalább egy kerületet, ahol vállalsz munkát.",
     };
   }
 
@@ -98,6 +107,7 @@ export async function updateCraftsmanProfile(
     user.id,
     location,
     serviceRadiusKm,
+    location.county === "Budapest" ? coverageAreas : undefined,
   );
 
   const pioneerZone = await isPioneerZoneForCraftsman(

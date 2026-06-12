@@ -9,6 +9,7 @@ import {
 import { CraftsmanProfileFields } from "@/components/craftsman/craftsman-profile-fields";
 import { PortfolioManager } from "@/components/craftsman/portfolio-manager";
 import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
+import type { CoverageArea } from "@/lib/places";
 import type { PortfolioImage } from "@/lib/types/portfolio";
 import { withPioneerZoneQuery } from "@/lib/auth/resolve-post-login-path";
 import { btnPrimaryClassName } from "@/lib/ui-classes";
@@ -18,6 +19,7 @@ const initialState: CraftsmanProfileFormState = {};
 
 type CraftsmanProfileSettingsProps = {
   defaultLocation: CraftsmanLocationEdit;
+  defaultCoverageAreas?: CoverageArea[];
   defaultCategories?: string[];
   defaultSubCategories?: string[];
   defaultBio?: string | null;
@@ -26,6 +28,7 @@ type CraftsmanProfileSettingsProps = {
 
 export function CraftsmanProfileSettings({
   defaultLocation,
+  defaultCoverageAreas = [],
   defaultCategories = [],
   defaultSubCategories = [],
   defaultBio = null,
@@ -57,6 +60,7 @@ export function CraftsmanProfileSettings({
           defaultCategories={defaultCategories}
           defaultSubCategories={defaultSubCategories}
           defaultLocation={defaultLocation}
+          defaultCoverageAreas={defaultCoverageAreas}
           defaultBio={defaultBio}
         />
       </form>

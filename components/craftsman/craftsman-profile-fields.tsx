@@ -2,10 +2,12 @@ import { CategorySkillPicker } from "@/components/categories/category-skill-pick
 import { CraftsmanLocationFields } from "@/components/craftsman/craftsman-location-fields";
 import { CRAFTSMAN_BIO_MAX_LENGTH } from "@/lib/chat-payment/constants";
 import type { CraftsmanLocationEdit } from "@/lib/craftsman-profile";
+import type { CoverageArea } from "@/lib/places";
 import { inputClassName, labelClassName } from "@/lib/ui-classes";
 
 type CraftsmanProfileFieldsProps = {
   defaultLocation: CraftsmanLocationEdit;
+  defaultCoverageAreas?: CoverageArea[];
   defaultCategories?: string[];
   defaultSubCategories?: string[];
   defaultBio?: string | null;
@@ -13,6 +15,7 @@ type CraftsmanProfileFieldsProps = {
 
 export function CraftsmanProfileFields({
   defaultLocation,
+  defaultCoverageAreas = [],
   defaultCategories = [],
   defaultSubCategories = [],
   defaultBio = null,
@@ -47,7 +50,10 @@ export function CraftsmanProfileFields({
         defaultSubCategories={defaultSubCategories}
       />
 
-      <CraftsmanLocationFields defaultLocation={defaultLocation} />
+      <CraftsmanLocationFields
+        defaultLocation={defaultLocation}
+        defaultCoverageAreas={defaultCoverageAreas}
+      />
     </>
   );
 }

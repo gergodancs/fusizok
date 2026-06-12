@@ -2,8 +2,8 @@ import { after } from "next/server";
 import { notifyUser } from "@/app/utils/notifications";
 import { normalizeProfessions } from "@/lib/craftsman";
 import {
+  craftsmanMatchesJobSkills,
   getMainCategoryLabel,
-  subCategoriesOverlap,
 } from "@/lib/constants/categories";
 import { buildNewNearbyJobEmailHtml } from "@/lib/notification-templates";
 import { formatJobLocation } from "@/lib/places";
@@ -61,10 +61,12 @@ export async function notifyMatchingCraftsmenForJob(
       (craftsman.sub_categories as string[] | null) ?? [];
     const professions = normalizeProfessions(craftsman.profession);
 
-    const skillMatch =
-      craftsmanSubs.length > 0 && jobSubs.length > 0
-        ? subCategoriesOverlap(craftsmanSubs, jobSubs)
-        : professions.includes(job.category);
+    const skillMatch = craftsmanMatchesJobSkills(
+      craftsmanSubs,
+      professions,
+      job.category,
+      jobSubs,
+    );
 
     if (!skillMatch) {
       continue;

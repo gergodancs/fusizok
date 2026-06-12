@@ -170,7 +170,21 @@ export const MAIN_CATEGORIES: MainCategory[] = [
       { key: "egyeb_ezermester", label: "Egyéb ezermester munka" },
     ],
   },
+  {
+    id: "egyeb",
+    label: "Egyéb",
+    bidCreditCost: 2,
+    subActivities: [
+      {
+        key: "egyeb_altalanos",
+        label: "Egyéb / nem találom a megfelelő kategóriát",
+      },
+    ],
+  },
 ];
+
+/** Fő „Egyéb” kategória – szélesebb értesítés a zónában. */
+export const OTHER_MAIN_CATEGORY_ID = "egyeb" as const;
 
 export const MAIN_CATEGORY_IDS = MAIN_CATEGORIES.map((c) => c.id) as readonly string[];
 
@@ -240,6 +254,52 @@ export function subCategoriesOverlap(
   }
   const jobSet = new Set(jobSubs);
   return craftsmanSubs.some((sub) => jobSet.has(sub));
+}
+
+/** Al-tevékenység „Egyéb” jelölés (pl. egyeb_villany). */
+export function isOtherSubCategoryKey(key: string): boolean {
+  return key === "egyeb_altalanos" || key.startsWith("egyeb_");
+}
+
+/** Egyéb hirdetés: minden, a zónában lévő fusizót érint. */
+export function isBroadcastJobCategory(
+  category: string,
+  subCategories: string[] | null | undefined,
+): boolean {
+  if (category === OTHER_MAIN_CATEGORY_ID) {
+    return true;
+  }
+  return (subCategories ?? []).some(isOtherSubCategoryKey);
+}
+
+/** Minden egyeb_* al-tevékenység kulcs (DB szűréshez). */
+export function getBroadcastSubCategoryKeys(): string[] {
+  const keys = new Set<string>();
+  for (const main of MAIN_CATEGORIES) {
+    for (const sub of main.subActivities) {
+      if (isOtherSubCategoryKey(sub.key)) {
+        keys.add(sub.key);
+      }
+    }
+  }
+  return [...keys];
+}
+
+export function craftsmanMatchesJobSkills(
+  craftsmanSubs: string[],
+  craftsmanProfessions: string[],
+  jobCategory: string,
+  jobSubs: string[],
+): boolean {
+  if (isBroadcastJobCategory(jobCategory, jobSubs)) {
+    return true;
+  }
+
+  if (craftsmanSubs.length > 0 && jobSubs.length > 0) {
+    return subCategoriesOverlap(craftsmanSubs, jobSubs);
+  }
+
+  return craftsmanProfessions.includes(jobCategory);
 }
 
 export function formatSubCategoryLabels(keys: string[]): string[] {

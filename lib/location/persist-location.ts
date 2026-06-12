@@ -5,6 +5,7 @@ import {
 } from "@/lib/location/gps-db";
 import { forwardGeocode } from "@/lib/location/geocode";
 import type { ParsedLocation } from "@/lib/location/types";
+import type { CoverageArea } from "@/lib/places";
 
 export type ResolvedLocation = {
   mode: ParsedLocation["mode"];
@@ -65,15 +66,26 @@ export async function persistCraftsmanLocation(
   craftsmanId: string,
   location: ParsedLocation,
   serviceRadiusKm: number,
+  coverageAreas?: CoverageArea[],
 ): Promise<ResolvedLocation> {
   const resolved = await resolveLocationForSave(location);
+
+  const coveragePayload =
+    coverageAreas && coverageAreas.length > 0
+      ? {
+          coverage_counties: coverageAreas.map((area) => area.county),
+          coverage_zip_codes: coverageAreas.map((area) => area.place),
+        }
+      : {
+          coverage_counties: resolved.county ? [resolved.county] : [],
+          coverage_zip_codes: resolved.city ? [resolved.city] : [],
+        };
 
   const payload: Record<string, unknown> = {
     service_radius_km: serviceRadiusKm,
     county: resolved.county,
     city: resolved.city,
-    coverage_counties: resolved.county ? [resolved.county] : [],
-    coverage_zip_codes: resolved.city ? [resolved.city] : [],
+    ...coveragePayload,
   };
 
   const { error } = await supabase

@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
-import { subCategoriesOverlap } from "@/lib/constants/categories";
+import {
+  craftsmanMatchesJobSkills,
+  getBroadcastSubCategoryKeys,
+  OTHER_MAIN_CATEGORY_ID,
+} from "@/lib/constants/categories";
 import type { CraftsmanProfile } from "@/lib/types/profile";
 import type { JobBidStats } from "@/lib/job-bid-stats";
 import { getJobBidStatsByJobIds } from "@/lib/job-bid-stats";
@@ -91,21 +95,36 @@ export async function getMatchedJobsForCraftsman(
     };
   }
 
-  let jobsQuery = supabase
-    .from("jobs")
-    .select(
-      "id, client_id, title, description, category, sub_categories, county, city, zip_code, status, required_completion_time, image_urls, created_at, location_gps",
-    )
-    .eq("status", "open")
-    .order("created_at", { ascending: false });
+  const jobSelect =
+    "id, client_id, title, description, category, sub_categories, county, city, zip_code, status, required_completion_time, image_urls, created_at, location_gps";
 
-  if (subCategories.length > 0) {
-    jobsQuery = jobsQuery.overlaps("sub_categories", subCategories);
-  } else {
-    jobsQuery = jobsQuery.in("category", professions);
-  }
+  const broadcastSubKeys = getBroadcastSubCategoryKeys();
+  const broadcastFilter = `category.eq.${OTHER_MAIN_CATEGORY_ID},sub_categories.ov.{${broadcastSubKeys.join(",")}}`;
 
-  const { data, error: jobsError } = await jobsQuery;
+  const [skillResult, broadcastResult] = await Promise.all([
+    subCategories.length > 0
+      ? supabase
+          .from("jobs")
+          .select(jobSelect)
+          .eq("status", "open")
+          .overlaps("sub_categories", subCategories)
+          .order("created_at", { ascending: false })
+      : supabase
+          .from("jobs")
+          .select(jobSelect)
+          .eq("status", "open")
+          .in("category", professions)
+          .order("created_at", { ascending: false }),
+    supabase
+      .from("jobs")
+      .select(jobSelect)
+      .eq("status", "open")
+      .or(broadcastFilter)
+      .order("created_at", { ascending: false }),
+  ]);
+
+  const jobsError = skillResult.error ?? broadcastResult.error;
+  const data = mergeJobsById(skillResult.data ?? [], broadcastResult.data ?? []);
 
   if (jobsError) {
     console.error("Illeszkedő munkák lekérdezési hiba:", jobsError.message);
@@ -132,11 +151,12 @@ export async function getMatchedJobsForCraftsman(
     if (bidJobIds.has(job.id)) {
       return false;
     }
-    const jobSubs = job.sub_categories ?? [];
-    if (subCategories.length > 0 && jobSubs.length > 0) {
-      return subCategoriesOverlap(subCategories, jobSubs);
-    }
-    return professions.includes(job.category);
+    return craftsmanMatchesJobSkills(
+      subCategories,
+      professions,
+      job.category,
+      job.sub_categories ?? [],
+    );
   });
 
   const candidateIds = candidateJobs.map((job) => job.id);
@@ -178,6 +198,16 @@ export async function getMatchedJobsForCraftsman(
 }
 
 /** Új, még nem látott nyitott munkák száma (menü badge) – könnyű DB RPC. */
+function mergeJobsById<T extends { id: string }>(...lists: T[][]): T[] {
+  const byId = new Map<string, T>();
+  for (const list of lists) {
+    for (const item of list) {
+      byId.set(item.id, item);
+    }
+  }
+  return [...byId.values()];
+}
+
 export async function countUnseenOpenJobsForCraftsman(
   userId: string,
 ): Promise<number> {

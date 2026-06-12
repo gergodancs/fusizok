@@ -1,4 +1,4 @@
-import { isValidJobLocation } from "@/lib/places";
+import { isValidJobLocation, normalizeCoverageAreas, type CoverageArea } from "@/lib/places";
 import {
   DEFAULT_SERVICE_RADIUS_KM,
   SERVICE_RADIUS_OPTIONS,
@@ -44,4 +44,15 @@ export function hasCraftsmanLocation(
   location: ParsedLocation | null,
 ): boolean {
   return location !== null;
+}
+
+export function parseCoverageAreasFromForm(formData: FormData): CoverageArea[] {
+  const counties = formData
+    .getAll("coverage_counties")
+    .map((value) => String(value).trim());
+  const places = formData
+    .getAll("coverage_places")
+    .map((value) => String(value).trim());
+
+  return normalizeCoverageAreas(counties, places);
 }
