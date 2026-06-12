@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { HomeHeroBackground } from "@/components/home/home-hero-background";
 import { PublicJobPreviewList } from "@/components/jobs/public-job-preview-list";
 import { PlatformStatsBanner } from "@/components/stats/platform-stats-banner";
 import { PwaNotificationCta } from "@/components/push/pwa-notification-cta";
@@ -54,10 +55,6 @@ const FEATURES = [
   },
 ] as const;
 
-/** Unsplash – szerszámfal / barkács (jogtiszta, ingyenes licenc). */
-const HERO_BACKGROUND_IMAGE =
-  "https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&q=80&w=1600";
-
 export default async function Home() {
   const [{ user, profile }, recentJobs, stats] = await Promise.all([
     getAuthContext(),
@@ -76,15 +73,7 @@ export default async function Home() {
   return (
     <>
       <section className="relative overflow-hidden">
-        <div
-          className="absolute inset-0 scale-105 bg-cover bg-center bg-no-repeat grayscale blur-[2px]"
-          style={{ backgroundImage: `url("${HERO_BACKGROUND_IMAGE}")` }}
-          aria-hidden
-        />
-        <div
-          className="absolute inset-0 bg-gradient-to-b from-black/75 via-black/70 to-zinc-950 backdrop-blur-sm"
-          aria-hidden
-        />
+        <HomeHeroBackground />
         <div className="absolute -top-24 right-0 h-96 w-96 rounded-full bg-amber-500/5 blur-3xl" />
         <div className="absolute -bottom-24 left-0 h-80 w-80 rounded-full bg-orange-600/5 blur-3xl" />
 
