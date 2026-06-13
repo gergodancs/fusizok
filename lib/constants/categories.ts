@@ -46,16 +46,24 @@ export const MAIN_CATEGORIES: MainCategory[] = [
     ],
   },
   {
-    id: "epitoipar",
-    label: "Építőipari kisebb munkák (Kőműves & Burkolás)",
+    id: "komuves",
+    label: "Kőműves",
     bidCreditCost: 5,
     subActivities: [
-      { key: "csempezes_jarolapozas", label: "Csempézés / járólapozás" },
       { key: "gipszkartonozas", label: "Gipszkartonozás" },
       { key: "kisebb_falazas_vakolas", label: "Kisebb falazás / vakolás" },
       { key: "betonozas_javitas", label: "Betonozás / javítás" },
       { key: "nyilaszaromoli_javitas", label: "Nyílászáró-mű javítás" },
       { key: "egyeb_komuves", label: "Egyéb kőműves munka" },
+    ],
+  },
+  {
+    id: "burkolas",
+    label: "Burkolás",
+    bidCreditCost: 5,
+    subActivities: [
+      { key: "csempezes_jarolapozas", label: "Csempézés / járólapozás" },
+      { key: "egyeb_burkolas", label: "Egyéb burkolás" },
     ],
   },
   {
@@ -241,6 +249,9 @@ export function normalizeMainCategoryId(value: string): string | null {
   const trimmed = value.trim();
   if (isValidMainCategoryId(trimmed)) {
     return trimmed;
+  }
+  if (trimmed === "epitoipar") {
+    return "komuves";
   }
   return LEGACY_CATEGORY_TO_MAIN_ID[trimmed] ?? null;
 }

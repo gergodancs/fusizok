@@ -25,9 +25,11 @@ describe("getBidCreditCostForCategory", () => {
     expect(getBidCreditCostForCategory("asztalos")).toBe(3);
   });
 
-  it("5.0 kredit: építőipar, lakatos", () => {
-    expect(getBidCreditCostForCategory("epitoipar")).toBe(5);
+  it("5.0 kredit: kőműves, burkolás, lakatos", () => {
+    expect(getBidCreditCostForCategory("komuves")).toBe(5);
+    expect(getBidCreditCostForCategory("burkolas")).toBe(5);
     expect(getBidCreditCostForCategory("lakatos")).toBe(5);
+    expect(getBidCreditCostForCategory("epitoipar")).toBe(5);
   });
 
   it("régi kategórianév is működik", () => {

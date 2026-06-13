@@ -94,8 +94,8 @@ export default async function Home() {
             </h1>
             <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-zinc-300 drop-shadow-md sm:text-lg sm:leading-relaxed">
               Polc fúrás, bútor összeszerelés, kert, villany – írd le ingyen,
-              miben kell segítség. A helyi fusizók pályáznak rád árral és
-              határidővel, te választasz. Fusizó vagy? Regisztrálj és böngéssz
+              miben kell segítség. A helyi szakemberek pályáznak rád árral és
+              határidővel, te választasz. Szaki vagy? Regisztrálj és böngéssz
               munkákat.
             </p>
 

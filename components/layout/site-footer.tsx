@@ -1,9 +1,6 @@
 import { FileText, Mail } from "lucide-react";
 import Link from "next/link";
 import { FeedbackLink } from "@/components/feedback/feedback-link";
-import { BetaCountdown } from "@/components/layout/beta-countdown";
-import { formatPromoEndDate } from "@/lib/beta/countdown";
-import { SIGNUP_CREDITS_PROMO_ENDS_AT } from "@/lib/constants/beta";
 
 export function SiteFooter() {
   return (
@@ -13,15 +10,7 @@ export function SiteFooter() {
           <p>
             © {new Date().getFullYear()} fusizok.hu – barkács közvetítő platform
           </p>
-          <p className="mt-1 text-xs text-zinc-600">
-            Béta verzió
-            {formatPromoEndDate(SIGNUP_CREDITS_PROMO_ENDS_AT)
-              ? ` · induló kredit akció: ${formatPromoEndDate(SIGNUP_CREDITS_PROMO_ENDS_AT)}-ig`
-              : ""}
-          </p>
-          <div className="mt-2 hidden sm:block">
-            <BetaCountdown variant="inline" />
-          </div>
+          <p className="mt-1 text-xs text-zinc-600">Béta verzió</p>
         </div>
         <nav className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
           <Link

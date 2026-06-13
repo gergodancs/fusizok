@@ -1,5 +1,3 @@
-import { formatPromoEndDate } from "@/lib/beta/countdown";
-import { SIGNUP_CREDITS_PROMO_ENDS_AT } from "@/lib/constants/beta";
 import { getBidCreditCostRange } from "@/lib/constants/categories";
 import { CRAFTSMAN_SIGNUP_CREDITS } from "@/lib/credits/constants";
 import { formatCreditAmount } from "@/lib/credits/format";
@@ -65,10 +63,6 @@ function emailLayout(
 function buildCraftsmanWelcomeBody(fullName: string): string {
   const signupCredits = formatCreditAmount(CRAFTSMAN_SIGNUP_CREDITS);
   const { min, max } = getBidCreditCostRange();
-  const promoEndLabel = formatPromoEndDate(SIGNUP_CREDITS_PROMO_ENDS_AT);
-  const promoNote = promoEndLabel
-    ? ` Az induló egyenleg akciója <strong>${escapeHtml(promoEndLabel)}</strong>-ig érvényes.`
-    : "";
 
   return `<p>Kedves <strong>${escapeHtml(fullName)}</strong>,</p>
 <p>Örülünk, hogy fusizóként csatlakoztál a <strong>Fusizok.hu</strong> béta közösségéhez. Köszönjük, hogy segítesz kipróbálni a platformot!</p>
@@ -76,7 +70,7 @@ function buildCraftsmanWelcomeBody(fullName: string): string {
 <div style="margin: 20px 0; padding: 16px 18px; background: #27272a; border: 1px solid #3f3f46; border-radius: 12px;">
   <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #fbbf24;">Béta induló egyenleg</p>
   <p style="margin: 0; color: #fafafa;">
-    <strong>${signupCredits} induló kreditet</strong> kaptál.${promoNote}
+    <strong>${signupCredits} induló kreditet</strong> kaptál.
     Béta alatt ezzel pályázhatsz – <strong>nem kell fizetned</strong>, és nem kell most kreditet vásárolnod.
   </p>
 </div>
