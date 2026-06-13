@@ -1,7 +1,20 @@
 import { NextResponse, type NextRequest } from "next/server";
+import {
+  buildOAuthCallbackRedirectUrl,
+  shouldRedirectOAuthCodeToCallback,
+} from "@/lib/auth/oauth-callback-redirect";
 import { updateSession } from "@/lib/supabase/middleware";
 
 export async function middleware(request: NextRequest) {
+  if (
+    shouldRedirectOAuthCodeToCallback(
+      request.nextUrl.pathname,
+      request.nextUrl.searchParams,
+    )
+  ) {
+    return NextResponse.redirect(buildOAuthCallbackRedirectUrl(request));
+  }
+
   const palyazMatch = /^\/szaki\/palyaz\/([^/]+)\/?$/.exec(
     request.nextUrl.pathname,
   );
