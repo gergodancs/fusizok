@@ -20,7 +20,7 @@ export function CraftsmanOnboardingChecklist({
     <div
       className={
         compact
-          ? "border-b border-amber-500/20 bg-amber-500/5 px-4 py-3"
+          ? "py-3"
           : `${cardClassName} p-6 sm:p-8`
       }
     >

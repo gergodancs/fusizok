@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { JobCardImagePreview } from "@/components/jobs/job-card-image-preview";
 import { JobMarketStats } from "@/components/jobs/job-market-stats";
 import { JobPostedAt } from "@/components/jobs/job-posted-at";
 import type { JobWithMarketStats } from "@/lib/craftsman";
@@ -24,7 +25,7 @@ type JobCardProps = {
 
 export function JobCard({ job }: JobCardProps) {
   const detailHref = `/hirdetes/${job.id}`;
-  const imageCount = job.image_urls?.length ?? 0;
+  const imageUrls = job.image_urls ?? [];
 
   return (
     <article className="group flex flex-col rounded-2xl border border-zinc-700/80 bg-zinc-800/80 p-6 shadow-lg shadow-black/20 transition hover:border-amber-500/40 hover:shadow-amber-500/5">
@@ -67,12 +68,9 @@ export function JobCard({ job }: JobCardProps) {
           <span className="inline-flex items-center rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
             {formatJobLocation(job)}
           </span>
-          {imageCount > 0 && (
-            <span className="inline-flex items-center rounded-lg bg-zinc-700/80 px-2.5 py-1 text-xs font-medium text-zinc-400">
-              {imageCount} kép
-            </span>
-          )}
         </div>
+
+        <JobCardImagePreview imageUrls={imageUrls} title={job.title} />
 
         <p className="line-clamp-3 text-sm leading-relaxed text-zinc-400">
           {job.description}
