@@ -5,4 +5,5 @@ export type Message = {
   content: string;
   created_at: string;
   is_system?: boolean;
+  visible_to_role?: "craftsman" | "client" | null;
 };

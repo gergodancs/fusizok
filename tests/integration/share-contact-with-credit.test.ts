@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { buildCraftsmanBidAcceptedChatMessage } from "@/lib/chat/craftsman-bid-accepted-message";
 import { initiateShareContact } from "@/app/actions/share-contact";
 import { sendMessage } from "@/app/actions/messages";
 import { createMockSupabaseClient } from "../helpers/supabase-mock";
@@ -28,8 +29,7 @@ const JOB_ID = "job-1";
 const CLIENT_ID = "client-1";
 const CRAFTSMAN_ID = "craftsman-1";
 const CONV_ID = "conv-1";
-const INTRO =
-  "Szia! Köszönöm a pályázatod! Teszt Lakos tetszik az ajánlatod – mesélj még róla!";
+const INTRO = buildCraftsmanBidAcceptedChatMessage("Teszt Lakos");
 
 describe("2. Kontakt megosztás – chat aktiválás", () => {
   let mock: ReturnType<typeof createMockSupabaseClient>;

@@ -174,7 +174,7 @@ export async function getConversationMessages(
 
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, content, created_at, is_system")
+    .select("id, conversation_id, sender_id, content, created_at, is_system, visible_to_role")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true });
 

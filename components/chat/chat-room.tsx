@@ -92,14 +92,21 @@ export function ChatRoom({
       <div className="flex-1 space-y-3 overflow-y-auto rounded-xl border border-zinc-700 bg-zinc-900/50 p-4">
         {messages.length === 0 ? (
           <p className="text-center text-sm text-zinc-500">
-            Még nincs üzenet. Írj az elsőt!
+            Még nincs üzenet. {canSend ? "Írj az elsőt!" : ""}
           </p>
         ) : (
           messages.map((msg) => {
             if (msg.is_system) {
+              const isCraftsmanWelcome = msg.visible_to_role === "craftsman";
               return (
                 <div key={msg.id} className="flex justify-center">
-                  <div className="max-w-[90%] rounded-xl border border-zinc-700/80 bg-zinc-800/60 px-4 py-3 text-center text-sm text-zinc-400">
+                  <div
+                    className={`max-w-[90%] rounded-xl border px-4 py-3 text-center text-sm ${
+                      isCraftsmanWelcome
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                        : "border-zinc-700/80 bg-zinc-800/60 text-zinc-400"
+                    }`}
+                  >
                     <p>{msg.content}</p>
                     <p className="mt-1 text-[10px] text-zinc-600">
                       {new Date(msg.created_at).toLocaleString("hu-HU", {

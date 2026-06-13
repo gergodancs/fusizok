@@ -10,6 +10,7 @@ import type {
   ShareContactResult,
 } from "@/lib/types/payments";
 import { closeLosingChatsForJob } from "@/lib/chat/close-losing-chats";
+import { buildCraftsmanBidAcceptedChatMessage } from "@/lib/chat/craftsman-bid-accepted-message";
 import { createClient } from "@/lib/supabase/server";
 
 type ShareContactRpcResult = {
@@ -98,7 +99,7 @@ export async function initiateShareContact(
 
   const profile = await getUserProfile(user.id);
   const clientName = profile?.full_name ?? "A megrendelő";
-  const introMessage = `Szia! Köszönöm a pályázatod! ${clientName} tetszik az ajánlatod – mesélj még róla!`;
+  const introMessage = buildCraftsmanBidAcceptedChatMessage(clientName);
 
   const supabase = await createClient();
 

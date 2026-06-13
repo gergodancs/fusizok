@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { activateContactAfterPayment } from "@/lib/payments/activate-contact-after-payment";
 import { addCreditsAfterPurchase } from "@/lib/payments/add-credits-after-purchase";
+import { buildCraftsmanBidAcceptedChatMessage } from "@/lib/chat/craftsman-bid-accepted-message";
 import { getCreditPack } from "@/lib/credits/packages";
 import { getStripeServerClient } from "@/lib/stripe/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -105,7 +106,7 @@ async function handleCheckoutSessionCompleted(
 
   const clientName = await getClientName(clientId);
   const jobTitle = await getJobTitle(jobId);
-  const introMessage = `Szia! ${clientName}-nek tetszik az ajánlatod, mondj róla többet!`;
+  const introMessage = buildCraftsmanBidAcceptedChatMessage(clientName);
 
   await activateContactAfterPayment({
     bidId,
