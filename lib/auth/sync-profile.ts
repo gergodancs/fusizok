@@ -1,4 +1,4 @@
-import type { User } from "@supabase/supabase-js";
+import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import type { UserRole } from "@/lib/types/profile";
 
@@ -11,8 +11,11 @@ function resolveRole(metadata: Record<string, unknown>): UserRole {
  * az auth user_metadata alapján. A DB trigger gyakran mindig 'client'-et ír –
  * ez javítja bejelentkezés/regisztráció után.
  */
-export async function syncUserProfile(user: User): Promise<void> {
-  const supabase = await createClient();
+export async function syncUserProfile(
+  user: User,
+  supabaseClient?: SupabaseClient,
+): Promise<void> {
+  const supabase = supabaseClient ?? (await createClient());
   const metadata = user.user_metadata ?? {};
   const role = resolveRole(metadata);
   const fullName =

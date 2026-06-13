@@ -1,12 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSiteUrl } from "@/lib/auth/get-site-url";
 import { parseOAuthRoleParam } from "@/lib/auth/oauth-role";
-import { resolvePostLoginPath } from "@/lib/auth/resolve-post-login-path";
+import {
+  resolvePostLoginPath,
+  resolveRoleFromUser,
+} from "@/lib/auth/resolve-post-login-path";
 import { scheduleWelcomeEmail } from "@/lib/auth/welcome-email";
 import { syncUserProfile } from "@/lib/auth/sync-profile";
 import { PRIVACY_VERSION } from "@/lib/privacy";
 import { TERMS_VERSION } from "@/lib/terms";
-import { createRouteHandlerClient } from "@/lib/supabase/route-handler";
+import {
+  applyPendingCookies,
+  createRouteHandlerClient,
+  type PendingAuthCookie,
+} from "@/lib/supabase/route-handler";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
@@ -21,9 +28,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/login?error=auth_callback_failed`);
   }
 
-  let next = nextParam && nextParam.startsWith("/") ? nextParam : "/";
-  const response = NextResponse.redirect(`${siteUrl}${next}`);
-  const supabase = createRouteHandlerClient(request, response);
+  const pendingCookies: PendingAuthCookie[] = [];
+  const supabase = createRouteHandlerClient(request, pendingCookies);
 
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
@@ -32,8 +38,25 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(`${siteUrl}/login?error=auth_callback_failed`);
   }
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    console.error("[auth/callback] Nincs user a session csere után");
+    return NextResponse.redirect(`${siteUrl}/login?error=auth_callback_failed`);
+  }
+
+  const { data: existingProfile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
   const metadataUpdate: Record<string, string> = {};
-  if (roleHint) {
+  const isNewAccount = !existingProfile?.role;
+
+  if (roleHint && isNewAccount) {
     metadataUpdate.role = roleHint;
   }
   if (acceptTerms) {
@@ -53,32 +76,33 @@ export async function GET(request: NextRequest) {
         "[auth/callback] User metadata frissítési hiba:",
         metadataError.message,
       );
-    } else if (roleHint) {
+    } else if (roleHint && isNewAccount) {
       console.log("[auth/callback] Szerepkör beállítva:", roleHint);
     }
   }
 
   const {
-    data: { user },
+    data: { user: refreshedUser },
   } = await supabase.auth.getUser();
 
-  if (user) {
-    await syncUserProfile(user);
+  const activeUser = refreshedUser ?? user;
+  await syncUserProfile(activeUser, supabase);
 
-    const role =
-      roleHint ??
-      (typeof user.user_metadata?.role === "string"
-        ? user.user_metadata.role
-        : undefined);
+  const role = resolveRoleFromUser(
+    existingProfile?.role ?? null,
+    activeUser.user_metadata?.role,
+    roleHint,
+  );
 
-    if (role === "craftsman" || role === "client") {
-      scheduleWelcomeEmail(user, role);
+  if (role === "craftsman" || role === "client") {
+    if (isNewAccount) {
+      scheduleWelcomeEmail(activeUser, role);
     }
-
-    next = resolvePostLoginPath(next, role);
-    response.headers.set("Location", `${siteUrl}${next}`);
   }
 
+  const next = resolvePostLoginPath(nextParam ?? undefined, role);
+  const redirectResponse = NextResponse.redirect(`${siteUrl}${next}`);
+
   console.log("[auth/callback] Sikeres bejelentkezés, átirányítás:", next);
-  return response;
+  return applyPendingCookies(redirectResponse, pendingCookies);
 }

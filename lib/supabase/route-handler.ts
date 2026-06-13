@@ -1,13 +1,19 @@
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import type { NextRequest, NextResponse } from "next/server";
 
+export type PendingAuthCookie = {
+  name: string;
+  value: string;
+  options: CookieOptions;
+};
+
 /**
- * Supabase kliens Route Handlerhez – a session cookie-k a redirect válaszra kerülnek.
- * (A sima cookies() + redirect néha elveszíti a sessiont első OAuth-nál.)
+ * Supabase kliens Route Handlerhez – a session cookie-k gyűjtése utólagos
+ * redirect válaszra íráshoz (megbízhatóbb első OAuth bejelentkezésnél).
  */
 export function createRouteHandlerClient(
   request: NextRequest,
-  response: NextResponse,
+  pendingCookies: PendingAuthCookie[],
 ) {
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,11 +24,25 @@ export function createRouteHandlerClient(
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
+          cookiesToSet.forEach((cookie) => {
+            pendingCookies.push({
+              name: cookie.name,
+              value: cookie.value,
+              options: cookie.options,
+            });
           });
         },
       },
     },
   );
+}
+
+export function applyPendingCookies(
+  response: NextResponse,
+  pendingCookies: PendingAuthCookie[],
+): NextResponse {
+  pendingCookies.forEach(({ name, value, options }) => {
+    response.cookies.set(name, value, options);
+  });
+  return response;
 }

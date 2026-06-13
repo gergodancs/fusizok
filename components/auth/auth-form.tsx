@@ -57,7 +57,7 @@ function RoleSelection({
       </div>
       {!selectedRole && (
         <p className="text-xs text-zinc-500">
-          A bejelentkezéshez előbb válaszd ki az egyik opciót.
+          Válaszd ki, milyen fiókot szeretnél létrehozni.
         </p>
       )}
     </div>
@@ -67,7 +67,6 @@ function RoleSelection({
 export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
-  const [craftsmanHasLocation, setCraftsmanHasLocation] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [termsError, setTermsError] = useState<string | null>(null);
   const [loginState, loginAction, isLoginPending] = useActionState(
@@ -83,9 +82,8 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
   const formAction = mode === "login" ? loginAction : registerAction;
   const isPending = mode === "login" ? isLoginPending : isRegisterPending;
   const isBusy = isPending;
-  const canAuthenticate = selectedRole !== null;
   const isRegisterMode = mode === "register";
-  const registerReady = canAuthenticate && termsAccepted;
+  const registerReady = selectedRole !== null && termsAccepted;
 
   function handleModeChange(nextMode: AuthMode) {
     setMode(nextMode);
@@ -96,13 +94,6 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
   return (
     <div className="w-full max-w-md">
-      <div className="mb-6">
-        <RoleSelection
-          selectedRole={selectedRole}
-          onRoleChange={setSelectedRole}
-        />
-      </div>
-
       <div className="mb-8 flex rounded-xl bg-zinc-900 p-1 ring-1 ring-zinc-700">
         <button
           type="button"
@@ -129,6 +120,22 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
       </div>
 
       {isRegisterMode && (
+        <div className="mb-6">
+          <RoleSelection
+            selectedRole={selectedRole}
+            onRoleChange={setSelectedRole}
+          />
+        </div>
+      )}
+
+      {mode === "login" && (
+        <p className="mb-6 text-sm text-zinc-500">
+          Már van fiókod? Jelentkezz be e-maillel vagy Google-lel – a rendszer
+          a meglévő profilod alapján irányít tovább.
+        </p>
+      )}
+
+      {isRegisterMode && (
         <div className="mb-4 space-y-2">
           <TermsAcceptanceCheckbox
             checked={termsAccepted}
@@ -138,7 +145,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
                 setTermsError(null);
               }
             }}
-            disabled={!canAuthenticate}
+            disabled={!selectedRole}
           />
           {termsError && (
             <p className="text-sm text-red-400" role="alert">
@@ -150,9 +157,11 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
       <GoogleSignInButton
         redirectTo={redirectTo}
-        role={selectedRole ?? undefined}
-        disabled={isBusy || !canAuthenticate || (isRegisterMode && !termsAccepted)}
+        role={isRegisterMode ? (selectedRole ?? undefined) : undefined}
         termsAccepted={!isRegisterMode || termsAccepted}
+        disabled={
+          isBusy || (isRegisterMode && (!selectedRole || !termsAccepted))
+        }
         onTermsRequired={() =>
           setTermsError(
             "A regisztrációhoz el kell fogadnod az ÁSZF-et és az Adatvédelmi Tájékoztatót!",
@@ -171,7 +180,9 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
       <form action={formAction} className="space-y-5">
         <input type="hidden" name="redirect" value={redirectTo} />
-        {selectedRole && <input type="hidden" name="role" value={selectedRole} />}
+        {isRegisterMode && selectedRole && (
+          <input type="hidden" name="role" value={selectedRole} />
+        )}
         {isRegisterMode && termsAccepted && (
           <input type="hidden" name="accept_terms" value="on" />
         )}
@@ -207,7 +218,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
               name="full_name"
               type="text"
               required
-              disabled={!canAuthenticate}
+              disabled={!selectedRole}
               placeholder="Kovács János"
               className={inputClassName}
             />
@@ -223,7 +234,6 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
             <FixedLocationPicker
               label="Szolgáltatási bázis"
               required={false}
-              onChange={(value) => setCraftsmanHasLocation(value.isComplete)}
             />
             <ServiceRadiusSelect />
           </div>
@@ -238,7 +248,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
             name="email"
             type="email"
             required
-            disabled={!canAuthenticate}
+            disabled={isRegisterMode && !selectedRole}
             autoComplete="email"
             placeholder="nev@email.hu"
             className={inputClassName}
@@ -254,7 +264,7 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
             name="password"
             type="password"
             required
-            disabled={!canAuthenticate}
+            disabled={isRegisterMode && !selectedRole}
             minLength={6}
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             placeholder="••••••••"
@@ -264,7 +274,9 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
 
         <button
           type="submit"
-          disabled={isPending || (isRegisterMode ? !registerReady : !canAuthenticate)}
+          disabled={
+            isPending || (isRegisterMode ? !registerReady : false)
+          }
           onClick={(e) => {
             if (isRegisterMode && !termsAccepted) {
               e.preventDefault();
@@ -277,10 +289,10 @@ export function AuthForm({ redirectTo = "/", authError }: AuthFormProps) {
         >
           {isPending
             ? "Folyamatban…"
-            : !canAuthenticate
-              ? "Válassz fiók típust a folytatáshoz"
-              : isRegisterMode && !termsAccepted
-                ? "Fogadd el az ÁSZF-et és az adatvédelmet"
+            : isRegisterMode && !termsAccepted
+              ? "Fogadd el az ÁSZF-et és az adatvédelmet"
+              : isRegisterMode && !selectedRole
+                ? "Válassz fiók típust a regisztrációhoz"
                 : mode === "login"
                   ? "Bejelentkezés"
                   : "Fiók létrehozása"}

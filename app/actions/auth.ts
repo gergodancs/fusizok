@@ -37,11 +37,6 @@ export async function login(
   const email = (formData.get("email") as string)?.trim();
   const password = formData.get("password") as string;
   const redirectTo = getRedirectPath(formData);
-  const selectedRole = parseRoleFormValue(formData.get("role"));
-
-  if (!selectedRole) {
-    return { error: "Kérjük, válaszd ki a fiók típusát a bejelentkezéshez." };
-  }
 
   if (!email || !password) {
     return { error: "Kérjük, adja meg az e-mail címet és a jelszót." };
@@ -59,24 +54,26 @@ export async function login(
   }
 
   if (data.user) {
-    const { error: roleError } = await supabase.auth.updateUser({
-      data: { role: selectedRole },
-    });
+    await syncUserProfile(data.user);
 
-    if (roleError) {
-      console.error("Szerepkör frissítési hiba:", roleError.message);
-    }
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .maybeSingle();
 
-    const {
-      data: { user: freshUser },
-    } = await supabase.auth.getUser();
+    const role =
+      profile?.role === "craftsman" || profile?.role === "client"
+        ? profile.role
+        : data.user.user_metadata?.role === "craftsman"
+          ? "craftsman"
+          : "client";
 
-    await syncUserProfile(freshUser ?? data.user);
+    revalidatePath("/", "layout");
+    redirect(resolvePostLoginPath(redirectTo, role));
   }
 
-  revalidatePath("/", "layout");
-
-  redirect(resolvePostLoginPath(redirectTo, selectedRole));
+  return { error: "A bejelentkezés sikertelen." };
 }
 
 export async function register(
