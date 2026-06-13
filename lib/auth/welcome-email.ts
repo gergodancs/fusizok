@@ -78,7 +78,7 @@ function resolveActionUrl(role: UserRole): string {
 
 function resolveSubject(role: UserRole): string {
   return role === "craftsman"
-    ? "Üdv fusizóként a Fusizok.hu-n – 100 induló kredited van"
+    ? "Üdv fusizóként a Fusizok.hu-n – béta induló kredit és értesítések"
     : "Üdvözlünk a Fusizok.hu-n – írd ki ingyen a munkát";
 }
 

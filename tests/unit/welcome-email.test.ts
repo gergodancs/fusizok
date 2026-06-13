@@ -16,6 +16,9 @@ describe("buildWelcomeEmailHtml", () => {
 
     expect(html).toContain("Teszt Elek");
     expect(html).toContain(String(CRAFTSMAN_SIGNUP_CREDITS));
+    expect(html).toContain("automatikusan újratöltjük");
+    expect(html).toContain("emailben azonnal értesítünk");
+    expect(html).toContain("köszönjük a türelmedet");
     expect(html).toContain("nem kell fizetned");
     expect(html).toContain("Profil kitöltése");
     expect(html).toContain("Első pályázat");

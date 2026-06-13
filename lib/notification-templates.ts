@@ -71,9 +71,18 @@ function buildCraftsmanWelcomeBody(fullName: string): string {
   <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #fbbf24;">Béta induló egyenleg</p>
   <p style="margin: 0; color: #fafafa;">
     <strong>${signupCredits} induló kreditet</strong> kaptál.
-    Béta alatt ezzel pályázhatsz – <strong>nem kell fizetned</strong>, és nem kell most kreditet vásárolnod.
+    A tesztidőszak alatt <strong>nem kell fizetned</strong>: ha elfogynak a kredited, automatikusan újratöltjük őket, hogy szabadon pályázhass.
   </p>
 </div>
+
+<div style="margin: 20px 0; padding: 16px 18px; background: #27272a; border: 1px solid #3f3f46; border-radius: 12px;">
+  <p style="margin: 0 0 8px; font-size: 14px; font-weight: 700; color: #fbbf24;">Értesítések a munkáidról</p>
+  <p style="margin: 0; color: #fafafa;">
+    Ha kitöltötted a profilodat (tevékenység és munkaterület), <strong>emailben azonnal értesítünk</strong>, amikor a körzetedben új hirdetés kerül fel – így nem maradsz le a neked való munkákról.
+  </p>
+</div>
+
+<p>A platform jelenleg béta tesztidőszakban van, és aktívan népszerűsítjük az oldalt. A munkák száma folyamatosan nőni fog – <strong>köszönjük a türelmedet</strong>, amíg a közösség összeáll!</p>
 
 <p>Pályázáskor látni fogod a kreditdíjat (kategóriánként kb. ${formatCreditAmount(min)}–${formatCreditAmount(max)} kredit lesz majd normál üzemben). Most az induló egyenlegeddel szabadon próbálkozhatsz.</p>
 

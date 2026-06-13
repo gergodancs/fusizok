@@ -10,6 +10,11 @@ export const SHOW_PLATFORM_STATS_BANNER = false;
 /** Új fusizók 100 kredit akció vége (ISO 8601, magyar idő). */
 export const SIGNUP_CREDITS_PROMO_ENDS_AT = "2026-07-07T23:59:59+02:00";
 
+/** Béta tesztidőszakban pályázáskor automatikus kreditfeltöltés erre az összegre. */
+export function isBetaCreditRefillActive(now = new Date()): boolean {
+  return now.getTime() <= new Date(SIGNUP_CREDITS_PROMO_ENDS_AT).getTime();
+}
+
 export const BETA_NOTICE = {
   icon: "🚀",
   title: "Tesztidőszak – köszönjük a bizalmat!",

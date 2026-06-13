@@ -5,6 +5,7 @@ import Link from "next/link";
 import { createJobBid, type BidFormState } from "@/app/actions/bids";
 import { InsufficientCreditsModal } from "@/components/credits/insufficient-credits-modal";
 import { AVAILABILITY_OPTIONS } from "@/lib/availability-options";
+import { isBetaCreditRefillActive } from "@/lib/constants/beta";
 import { formatCreditAmount, formatCreditBalance } from "@/lib/credits/format";
 import { btnPrimaryClassName, inputClassName, labelClassName } from "@/lib/ui-classes";
 
@@ -30,6 +31,8 @@ export function JobBidForm({
   const [showInsufficientModal, setShowInsufficientModal] = useState(false);
 
   const hasEnoughCredits = creditBalance >= bidCreditCost;
+  const betaRefillActive = isBetaCreditRefillActive();
+  const canSubmitBid = hasEnoughCredits || betaRefillActive;
   const bidCostLabel = formatCreditAmount(bidCreditCost);
 
   useEffect(() => {
@@ -70,11 +73,21 @@ export function JobBidForm({
           href="/szaki/kreditek"
           className="font-medium text-amber-400 hover:text-amber-300"
         >
-          Kreditvásárlás →
+          {betaRefillActive ? "Kreditek →" : "Kreditvásárlás →"}
         </Link>
       </div>
 
-      {!hasEnoughCredits && (
+      {!hasEnoughCredits && betaRefillActive && (
+        <div
+          role="status"
+          className="mb-5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-200"
+        >
+          Béta tesztidőszakban a kredited automatikusan feltöltődik pályázáskor,
+          ha elfogy – nyugodtan küldheted az ajánlatod.
+        </div>
+      )}
+
+      {!hasEnoughCredits && !betaRefillActive && (
         <div
           role="alert"
           className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"
@@ -109,7 +122,7 @@ export function JobBidForm({
             step={100}
             placeholder="pl. 15000"
             className={inputClassName}
-            disabled={!hasEnoughCredits}
+            disabled={!canSubmitBid}
           />
         </div>
 
@@ -123,7 +136,7 @@ export function JobBidForm({
             required
             defaultValue=""
             className={inputClassName}
-            disabled={!hasEnoughCredits}
+            disabled={!canSubmitBid}
           >
             <option value="" disabled>
               Válassz időpontot…
@@ -146,13 +159,13 @@ export function JobBidForm({
             rows={4}
             placeholder="pl. Van profi fúróm, szombaton ráérek."
             className={`${inputClassName} resize-y`}
-            disabled={!hasEnoughCredits}
+            disabled={!canSubmitBid}
           />
         </div>
 
         <button
           type="submit"
-          disabled={isPending || !hasEnoughCredits}
+          disabled={isPending || !canSubmitBid}
           className={`w-full ${btnPrimaryClassName}`}
         >
           {isPending
