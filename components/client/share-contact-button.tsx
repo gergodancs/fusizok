@@ -63,10 +63,10 @@ export function ShareContactButton({ bidId }: ShareContactButtonProps) {
         {loading ? (
           <>
             <Spinner />
-            Feldolgozás…
+            Chat indítása…
           </>
         ) : (
-          "Ajánlat elfogadása"
+          "Kapcsolatfelvétel"
         )}
       </button>
       {error && (

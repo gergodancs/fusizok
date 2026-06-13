@@ -14,12 +14,12 @@ const STEPS = [
   {
     icon: Share2,
     title: "3. Kiválasztod a legjobbat",
-    body: "Az Ajánlatok menüben összehasonlíthatod a jelentkezőket, és megoszthatod velük a kapcsolatot.",
+    body: "Az Ajánlatok menüben összehasonlíthatod a jelentkezőket, és felveszed a kapcsolatot a kiválasztott fusizóval.",
   },
   {
     icon: MessageSquare,
     title: "4. Chat és egyeztetés",
-    body: "Elfogadás után biztonságosan chateltek az alkalmazásban a részletekről.",
+    body: "Kapcsolatfelvétel után biztonságosan chateltek az alkalmazásban a részletekről.",
   },
 ] as const;
 

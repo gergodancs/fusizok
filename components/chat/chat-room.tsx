@@ -32,6 +32,8 @@ export function ChatRoom({
     initialState,
   );
   const bottomRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+  const wasPendingRef = useRef(false);
 
   const markReadAndRefresh = useCallback(async () => {
     const result = await markConversationReadAction(conversationId);
@@ -78,6 +80,13 @@ export function ChatRoom({
   }, [conversationId, markReadAndRefresh]);
 
   useEffect(() => {
+    if (wasPendingRef.current && !isPending && !state.error) {
+      formRef.current?.reset();
+    }
+    wasPendingRef.current = isPending;
+  }, [isPending, state.error]);
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -107,7 +116,7 @@ export function ChatRoom({
                         : "border-zinc-700/80 bg-zinc-800/60 text-zinc-400"
                     }`}
                   >
-                    <p>{msg.content}</p>
+                    <p className="whitespace-pre-wrap">{msg.content}</p>
                     <p className="mt-1 text-[10px] text-zinc-600">
                       {new Date(msg.created_at).toLocaleString("hu-HU", {
                         month: "short",
@@ -134,7 +143,7 @@ export function ChatRoom({
                       : "bg-zinc-800 text-zinc-100"
                   }`}
                 >
-                  <p>{msg.content}</p>
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
                   <p
                     className={`mt-1 text-[10px] ${isOwn ? "text-zinc-800/70" : "text-zinc-500"}`}
                   >
@@ -154,20 +163,39 @@ export function ChatRoom({
       </div>
 
       {canSend ? (
-        <form action={formAction} className="mt-4 flex gap-2">
+        <form
+          ref={formRef}
+          action={formAction}
+          className="mt-4 flex items-end gap-2"
+          onSubmit={(event) => {
+            const form = event.currentTarget;
+            const content = (
+              form.elements.namedItem("content") as HTMLTextAreaElement
+            )?.value.trim();
+            if (!content) {
+              event.preventDefault();
+            }
+          }}
+        >
           <input type="hidden" name="conversation_id" value={conversationId} />
-          <input
-            name="content"
-            type="text"
-            required
-            placeholder="Írj üzenetet…"
-            className={`flex-1 ${inputClassName}`}
-            autoComplete="off"
-          />
+          <div className="min-w-0 flex-1">
+            <textarea
+              name="content"
+              rows={2}
+              required
+              placeholder="Írj üzenetet…"
+              className={`${inputClassName} min-h-[2.75rem] resize-y`}
+              autoComplete="off"
+              enterKeyHint="enter"
+            />
+            <p className="mt-1 hidden text-xs text-zinc-500 sm:block">
+              Enter: új sor · Küldés: gomb
+            </p>
+          </div>
           <button
             type="submit"
             disabled={isPending}
-            className={btnPrimaryClassName}
+            className={`shrink-0 ${btnPrimaryClassName}`}
           >
             {isPending ? "…" : "Küldés"}
           </button>
